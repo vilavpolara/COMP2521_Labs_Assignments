@@ -1,6 +1,8 @@
 -- 1. Retrieve the student's last names and the last name of their advisor. Make
 --    appropriate use of aliases.
-SELECT s_last AS Student_LastName, f_last AS Advisor_LastName
+SELECT s.s_last AS Student_LastName, f.f_last AS Advisor_LastName
+FROM student s
+JOIN faculty f ON s.f_id = f.f_id;
 
 -- 2. Retrieve the advisor name along with the number of students they are 
 --    advising.
@@ -10,10 +12,10 @@ GROUP BY f_first, f_last;
 
 -- 3. Retrieve the last name of faculty members who are scheduled to teach 
 --    course sections. Show the total maximum enrollment per faculty member. 
-SELECT faculty.f_id, faculty.f_last, SUM(max_enrl)
-FROM faculty, course_section
-WHERE faculty.f_id = course_section.f_id
-GROUP BY f_id, f_last;
+SELECT f.f_id, f.f_last, SUM(cs.max_enrl) AS total_max_enrollment
+FROM faculty f JOIN course_section cs ON f.f_id = cs.f_id
+GROUP BY f.f_id, f.f_last;
+
 
 -- 4. Retrieve the course ID and course name of all sections that are scheduled 
 --    in the course section table and their corresponding maximum enrollment.  
@@ -28,36 +30,66 @@ SELECT course_section.course_id, course.course_name, course_section.max_enrl
 FROM course JOIN course_section USING (course_id);
 
 -- 5. Modify query #4 to retrieve the total maximum enrollment per course.
-SELECT cs.course_id, c.course_name, SUM(cs.max_enrl)
+SELECT cs.course_id, c.course_name, SUM(cs.max_enrl) AS total_max_enrollment
 FROM course c JOIN course_section cs USING (course_id)
-GROUP BY c.course_name;
+GROUP BY cs.course_id, c.course_name;
+
 
 -- 6. Modify query #5 to retrieve only those courses that have their total
 --    enrollment greater than 200
-SELECT cs.course_id, c.course_name, SUM(cs.max_enrl)
+SELECT cs.course_id, c.course_name, SUM(cs.max_enrl) AS total_max_enrollment
 FROM course c JOIN course_section cs USING (course_id)
-GROUP BY c.course_name
-HAVING SUM(max_enrl) > 200;
+GROUP BY cs.course_id, c.course_name
+HAVING SUM(cs.max_enrl) > 200;
+
 
 -- 7. Retrieve the location ID, building code, and room of locations that have
 --    been scheduled for a course section. Show the number of course sections
 --    taking plase in each of those locations. Sort the result with location ID.
-SELECT loc_id, bldg_code, room, COUNT(c_sec_id)
+SELECT loc_id, bldg_code, room, COUNT(c_sec_id) AS total_sections
 FROM course_section JOIN location USING (loc_id)
-GROUP BY loc_id, bldg_code, room;
+GROUP BY loc_id, bldg_code, room
+ORDER BY loc_id;
+
 
 -- 8. Retrieve the course name, term description, faculty last name and room of
 --    course sections that have been scheduled
-
+SELECT c.course_name, t.term_desc, f.f_last, l.room
+FROM course_section cs JOIN course c   ON cs.course_id = c.course_id
+                       JOIN term t     ON cs.term_id = t.term_id
+                       JOIN faculty f  ON cs.f_id = f.f_id
+                       JOIN location l ON cs.loc_id = l.loc_id;
 
 -- 9. Run query #8. Is the new coruse section included in your result. Show as a
 --    comment in SQL file
+INSERT INTO course_section (c_sec_id, course_id, term_id, sec_num, f_id, c_sec_day, 
+c_sec_time, c_sec_duration, loc_id, max_enrl)
+VALUES (14, 1, 6, 2, 3, 'MWF', '0000-00-00', '0 00:01:15.00', NULL, 35);
+
+/* After inserting a course section with loc_id = NULL, the section does not 
+   appear in query #8 because INNER JOINs require matching rows in the location 
+   table. */
+
 
 -- 10. Retrieve the course name, and the name of prerequisite course for those
 --     courses that have prerequisites.
+SELECT c.course_name AS course, p.course_name AS prerequisite
+FROM course c JOIN course p ON c.preq = p.course_id;
 
 -- 11. Retrieve the first and last name of all faculty who have the same rank as
 --     Kim Cox. Do not show Kim Cox in the result.
+SELECT f.f_first, f.f_last
+FROM faculty f JOIN faculty k ON f.f_rank = k.f_rank
+WHERE k.f_first = 'Kim'
+  AND k.f_last = 'Cox'
+  AND NOT (f.f_first = 'Kim' AND f.f_last = 'Cox');
+
 
 -- 12. Retrieve all student last names of those that are advised by Sarah 
 --     Miller's in the result
+SELECT s2.s_last
+FROM student s1
+JOIN student s2 ON s1.f_id = s2.f_id
+WHERE s1.s_first = 'Sarah'
+  AND s1.s_last = 'Miller'
+  AND NOT (s2.s_first = 'Sarah' AND s2.s_last = 'Miller');
