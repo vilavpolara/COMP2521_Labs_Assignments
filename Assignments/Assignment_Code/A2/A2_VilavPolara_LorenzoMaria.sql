@@ -71,7 +71,15 @@ Zipcode:
     state
 
 */
---------------------------------------------------------------------------------
+/*------------------------------------------------------------------------------
+                Assignment 2 - Querying the University Database
+
+                                COMP 2521 - 001                            
+                                 Shoba Ittyipe              
+                      Authors: Vilav Polara, Lorenzo Maria                        
+                               Due: March 2, 2026
+------------------------------------------------------------------------------*/
+
 -- 1. Retrieve the different descriptions of grade types that a student can 
 --    participate in and their respective grade type code.
 
@@ -81,19 +89,9 @@ Zipcode:
 -- 2. Retrieve all the sections of course 130 and show the grade breakdown in 
 --    each of its sections.  
 
-SELECT c.course_no, s.section_id, g.grade_type_code
-FROM course c JOIN section s ON c.course_no = s.course_no
-            JOIN grade g ON s.section_id = g.section_id
-WHERE c.course_no = 130;
-GROUP BY section_id; 
-
-
-
-SELECT course.course_no, section.section_id, grade_type_weight.grade_type_code
-FROM course JOIN section ON course.course_no = section.course_no
-            JOIN grade_type_weight ON section.section_id = grade_type_weight.section_id
-WHERE course.course_no=130;
-
+SELECT DISTINCT s.course_no, s.section_id, g.grade_type_code
+FROM section s JOIN grade g ON s.section_id = g.section_id
+WHERE s.course_no = 130;
 
 --------------------------------------------------------------------------------
 -- 3. Retrieve all courses with 'Ad' in their description (except those that 
@@ -108,6 +106,13 @@ WHERE course.course_no=130;
 --    yet. Write this query in two distinctly different ways. Number them as 
 --    4(a) and 4(b). Valid only if it is a different way!  
 
+-- 4(a)
+SELECT course_no, description, cost, prerequisite
+FROM course
+WHERE description LIKE 'Intro to%' 
+    AND cost < 1100.00 OR cost IS NULL;
+
+-- 4(b)
 
 
 --------------------------------------------------------------------------------
@@ -123,6 +128,20 @@ WHERE course.course_no=130;
 --    answer to the above query is right. Number the proof part as 6 (proof); 
 --    explain how the query result is correct.  
 
+SELECT student_id, COUNT(section_id)
+FROM enrollment
+GROUP BY student_id
+HAVING COUNT(section_id) >= 4;
+
+-- 6 (proof)
+SELECT student_id, section_id
+FROM enrollment
+WHERE student_id IN (
+    SELECT student_id
+    FROM enrollment
+    GROUP BY student_id
+    HAVING COUNT(section_id) >= 4
+);
 
 
 --------------------------------------------------------------------------------
