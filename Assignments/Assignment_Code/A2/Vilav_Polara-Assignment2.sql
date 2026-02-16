@@ -81,6 +81,18 @@ Zipcode:
 -- 2. Retrieve all the sections of course 130 and show the grade breakdown in 
 --    each of its sections.  
 
+SELECT c.course_no, s.section_id, g.grade_type_code
+FROM course c JOIN section s ON c.course_no = s.course_no
+            JOIN grade g ON s.section_id = g.section_id
+WHERE c.course_no = 130;
+GROUP BY section_id; 
+
+
+
+SELECT course.course_no, section.section_id, grade_type_weight.grade_type_code
+FROM course JOIN section ON course.course_no = section.course_no
+            JOIN grade_type_weight ON section.section_id = grade_type_weight.section_id
+WHERE course.course_no=130;
 
 
 --------------------------------------------------------------------------------
