@@ -83,6 +83,8 @@ Zipcode:
 -- 1. Retrieve the different descriptions of grade types that a student can 
 --    participate in and their respective grade type code.
 
+SELECT description, GRADE_TYPE_CODE
+FROM university.grade_type;
 
 
 --------------------------------------------------------------------------------
@@ -97,7 +99,12 @@ WHERE s.course_no = 130;
 -- 3. Retrieve all courses with 'Ad' in their description (except those that 
 --    begin with the word 'Advanced') and show their overall course capacities.  
 
-
+SELECT a.description, a.course_no, SUM(b.capacity) AS overall_capacity
+FROM university.course a, university.section b
+WHERE description NOT LIKE 'Advanced%'
+AND description LIKE '%Ad%'
+AND a.course_no = b.course_no
+GROUP BY a.course_no;
 
 --------------------------------------------------------------------------------
 -- 4. Retrieve the course number, course description, and the respective 
@@ -120,7 +127,10 @@ WHERE description LIKE 'Intro to%'
 --    of courses with their cost as $1195. Consider only those courses with a 
 --    prerequisite of either 20 or 25.  
 
-
+SELECT course_no, description, cost, prerequisite
+FROM university.course 
+WHERE cost = 1195
+AND (prerequisite = 20 OR prerequisite = 25)
 
 --------------------------------------------------------------------------------
 -- 6. Retrieve the student IDs of students who have enrolled in 4 or more 
