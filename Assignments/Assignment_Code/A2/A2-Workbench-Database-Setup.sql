@@ -1,5 +1,29 @@
 USE university;
 
+CREATE TABLE course(
+	course_no decimal(8,0),
+    description varchar(50),
+    cost decimal(9,2),
+    prerequisite decimal(8,0)
+    /*
+    created_by varchar(30),
+    created_date date,
+    modified_by varchar(30),
+    modified_date date
+	*/
+);
+
+CREATE TABLE enrollment(
+	student_id decimal(8,0),
+    section_id decimal(8,0),
+    enroll_date date,
+    final_grade decimal(3,0),
+    created_by varchar(30),
+    created_date date,
+    modified_by varchar(30),
+    modified_date date
+);
+
 CREATE TABLE grade(
 	student_id decimal(8,0) ,
     section_id decimal(8,0) ,
