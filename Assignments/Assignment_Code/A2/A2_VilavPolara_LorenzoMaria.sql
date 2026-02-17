@@ -158,7 +158,12 @@ WHERE student_id IN (
 -- 7. Retrieve the company that employs the largest number of students. Display 
 --    also the number of students they employ.
 
-
+SELECT s.employer, COUNT(*) AS num_of_student_employed
+FROM university.student s
+WHERE s.employer IS NOT NULL
+GROUP BY s.employer
+ORDER BY COUNT(*) DESC
+LIMIT 1;
 
 --------------------------------------------------------------------------------
 -- 8. Retrieve the total number of instructors who teach at least one section of
@@ -170,7 +175,10 @@ WHERE student_id IN (
 -- 9. Retrieve the section ID of those sections that have students enrolled in 
 --    them. Display also the date of the most recent enrollment in each section.  
 
-
+SELECT section_id, MAX(enroll_date) AS recent_employment
+FROM university.enrollment
+GROUP BY section_id
+ORDER BY MAX(enroll_date) DESC;
 
 --------------------------------------------------------------------------------
 -- 10. Retrieve the instructor's first and last name who has a final grade 
@@ -181,7 +189,10 @@ WHERE student_id IN (
 --------------------------------------------------------------------------------
 -- 11. Retrieve those sections of courses that do not have a prerequisite.  
 
-
+SELECT s.section_id
+FROM university.course c JOIN university.section s
+ON c.course_no = s.course_no
+WHERE c.prerequisite IS NULL;
 
 --------------------------------------------------------------------------------
 -- 12. Retrieve the description of all courses with a prerequisite of 350 that
