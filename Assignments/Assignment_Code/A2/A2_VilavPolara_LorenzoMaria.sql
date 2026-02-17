@@ -106,6 +106,13 @@ SELECT course_no,
 FROM course
 WHERE description LIKE '%Ad%' 
     AND description NOT LIKE 'Advanced%';
+    
+SELECT a.description, a.course_no, SUM(b.capacity) AS overall_capacity
+FROM university.course a, university.section b
+WHERE description NOT LIKE 'Advanced%'
+AND description LIKE '%Ad%'
+AND a.course_no = b.course_no
+GROUP BY a.course_no;
 
 --------------------------------------------------------------------------------
 -- 4. Retrieve the course number, course description, and the respective 
@@ -190,6 +197,11 @@ SELECT section_id,
 FROM enrollment
 GROUP BY section_id;
 
+SELECT section_id, MAX(enroll_date) AS recent_employment
+FROM university.enrollment
+GROUP BY section_id
+ORDER BY MAX(enroll_date) DESC;
+
 --------------------------------------------------------------------------------
 -- 10. Retrieve the instructor's first and last name who has a final grade 
 --     posted on the database. Also, display the course description.
@@ -210,6 +222,11 @@ SELECT c.prerequisite,
        c.course_no, 
        s.section_id
 FROM course c JOIN section s ON c.course_no = s.course_no
+WHERE c.prerequisite IS NULL;
+
+SELECT s.section_id
+FROM university.course c JOIN university.section s
+ON c.course_no = s.course_no
 WHERE c.prerequisite IS NULL;
 
 --------------------------------------------------------------------------------
