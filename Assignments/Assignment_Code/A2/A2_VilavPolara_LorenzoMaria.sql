@@ -69,7 +69,6 @@ Zipcode:
     zip, primary key
     city
     state
-
 */
 /*------------------------------------------------------------------------------
                 Assignment 2 - Querying the University Database
@@ -101,18 +100,13 @@ WHERE s.course_no = 130;
 -- 3. Retrieve all courses with 'Ad' in their description (except those that 
 --    begin with the word 'Advanced') and show their overall course capacities.  
 
-SELECT course_no, 
-       description
-FROM course
-WHERE description LIKE '%Ad%' 
-    AND description NOT LIKE 'Advanced%';
-    
-SELECT a.description, a.course_no, SUM(b.capacity) AS overall_capacity
-FROM university.course a, university.section b
-WHERE description NOT LIKE 'Advanced%'
-AND description LIKE '%Ad%'
-AND a.course_no = b.course_no
-GROUP BY a.course_no;
+SELECT c.course_no, 
+       c.description,
+       SUM(s.capacity)
+FROM course c JOIN section s ON c.course_no = s.course_no
+WHERE c.description NOT LIKE 'Advanced%'
+    AND c.description LIKE '%Ad%'
+GROUP BY course_no;
 
 --------------------------------------------------------------------------------
 -- 4. Retrieve the course number, course description, and the respective 
@@ -195,10 +189,6 @@ WHERE instructor_id IS NOT NULL;
 SELECT section_id, 
        MAX(enroll_date) AS Most_Recent_Enrollment
 FROM enrollment
-GROUP BY section_id;
-
-SELECT section_id, MAX(enroll_date) AS recent_employment
-FROM university.enrollment
 GROUP BY section_id
 ORDER BY MAX(enroll_date) DESC;
 
@@ -222,11 +212,6 @@ SELECT c.prerequisite,
        c.course_no, 
        s.section_id
 FROM course c JOIN section s ON c.course_no = s.course_no
-WHERE c.prerequisite IS NULL;
-
-SELECT s.section_id
-FROM university.course c JOIN university.section s
-ON c.course_no = s.course_no
 WHERE c.prerequisite IS NULL;
 
 --------------------------------------------------------------------------------
