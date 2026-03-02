@@ -94,7 +94,8 @@ SELECT DISTINCT s.course_no,
                 s.section_id, 
                 g.grade_type_code
 FROM section s JOIN grade g ON s.section_id = g.section_id
-WHERE s.course_no = 130;
+WHERE s.course_no = 130
+Order By section_id, grade_type_code;
 
 --------------------------------------------------------------------------------
 -- 3. Retrieve all courses with 'Ad' in their description (except those that 
@@ -106,7 +107,8 @@ SELECT c.course_no,
 FROM course c JOIN section s ON c.course_no = s.course_no
 WHERE c.description NOT LIKE 'Advanced%'
     AND c.description LIKE '%Ad%'
-GROUP BY course_no;
+GROUP BY c.course_no,
+         c.description;
 
 --------------------------------------------------------------------------------
 -- 4. Retrieve the course number, course description, and the respective 
@@ -169,10 +171,11 @@ WHERE student_id IN (
 --    also the number of students they employ.
 
 SELECT employer, 
-       COUNT(student_id) AS Number_Student_Employ
+       COUNT(student_id) AS Num_Student_Employed
 FROM student
 GROUP BY employer
-ORDER BY COUNT(student_id) DESC;
+ORDER BY COUNT(student_id) DESC
+LIMIT 1;
 
 --------------------------------------------------------------------------------
 -- 8. Retrieve the total number of instructors who teach at least one section of
@@ -232,13 +235,14 @@ WHERE c.prerequisite = 350;
 --     all courses/sections that they were enrolled in. Use the IN operator in 
 --     your query.  
 
-SELECT DISTINCT s.first_name, 
-                s.last_name, 
-                e.section_id, 
-                gt.description, 
-                g.numeric_grade
+SELECT s.first_name,
+       s.last_name, 
+       e.section_id, 
+       gt.description, 
+       g.numeric_grade
 FROM student s JOIN enrollment e ON s.student_id = e.student_id
                JOIN grade g ON e.section_id = g.section_id
+                    AND e.student_id = g.student_id
                JOIN grade_type gt ON g.grade_type_code = gt.grade_type_code
 WHERE s.first_name = 'Larry' 
     AND s.last_name = 'Walter'
@@ -249,12 +253,16 @@ WHERE s.first_name = 'Larry'
 --     state field) students of course number 350. Note that the final exam does
 --     not mean the final grade.  
 
-SELECT z.state, s.course_no, g.student_id, AVG(g.numeric_grade)
+SELECT z.state, 
+       s.course_no, 
+       g.student_id, 
+       AVG(g.numeric_grade) AS Final_Examination_Grades
 FROM zipcode z JOIN student st ON z.zip = st.zip
                JOIN grade g ON st.student_id = g.student_id
                JOIN section s ON g.section_id = s.section_id
 WHERE s.course_no=350 
     AND z.state = 'NJ'
+    AND g.grade_type_code = 'FI'
 GROUP BY student_id;
 
 --------------------------------------------------------------------------------
@@ -271,7 +279,7 @@ SELECT g.grade_type_code AS Grade_Type,
 FROM course c JOIN section s ON c.course_no = s.course_no
               JOIN grade g ON s.section_id = g.section_id
 WHERE g.grade_type_code = 'FI'
-GROUP BY section_no 
+GROUP BY c.description, s.section_no 
 ORDER BY MIN(g.numeric_grade) DESC;
 
 --------------------------------------------------------------------------------
