@@ -124,8 +124,7 @@ SELECT course_no,
        cost, 
        prerequisite
 FROM course
-WHERE (description LIKE 'Intro to%' AND cost < 1100.00) 
-    OR cost IS NULL;
+WHERE description LIKE 'Intro to%' AND (cost < 1100.00 OR cost IS NULL);
 
 -- 4(b)
 -- COALESCE
@@ -256,14 +255,13 @@ WHERE s.first_name = 'Larry'
 SELECT z.state, 
        s.course_no, 
        g.student_id, 
-       AVG(g.numeric_grade) AS Final_Examination_Grades
+       g.numeric_grade AS Final_Examination_Grades
 FROM zipcode z JOIN student st ON z.zip = st.zip
                JOIN grade g ON st.student_id = g.student_id
                JOIN section s ON g.section_id = s.section_id
 WHERE s.course_no=350 
     AND z.state = 'NJ'
-    AND g.grade_type_code = 'FI'
-GROUP BY student_id;
+    AND g.grade_type_code = 'FI';
 
 --------------------------------------------------------------------------------
 -- 15. Retrieve the lowest grade achieved for the final exam within each section
@@ -272,15 +270,14 @@ GROUP BY student_id;
 --     section).  
 --     Hint: make use of an alias for the column.  
 
-SELECT g.grade_type_code AS Grade_Type, 
-       c.description AS Course_Name, 
+SELECT c.description AS Course_Name, 
        s.section_no AS Section_Number, 
        MIN(g.numeric_grade) AS Lowest_Final_Exam_Grade
 FROM course c JOIN section s ON c.course_no = s.course_no
               JOIN grade g ON s.section_id = g.section_id
 WHERE g.grade_type_code = 'FI'
 GROUP BY c.description, s.section_no 
-ORDER BY MIN(g.numeric_grade) DESC;
+ORDER BY Lowest_Final_Exam_Grade DESC;
 
 --------------------------------------------------------------------------------
 -- 16. Retrieve all the courses that a student repeatedly enrolled in more than
