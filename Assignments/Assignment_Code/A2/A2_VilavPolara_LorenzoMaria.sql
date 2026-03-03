@@ -241,7 +241,7 @@ SELECT s.first_name,
        g.numeric_grade
 FROM student s JOIN enrollment e ON s.student_id = e.student_id
                JOIN grade g ON e.section_id = g.section_id
-                    AND e.student_id = g.student_id
+                            AND e.student_id = g.student_id
                JOIN grade_type gt ON g.grade_type_code = gt.grade_type_code
 WHERE s.first_name = 'Larry' 
     AND s.last_name = 'Walter'
