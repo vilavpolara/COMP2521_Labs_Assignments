@@ -124,10 +124,17 @@ SELECT course_no,
        cost, 
        prerequisite
 FROM course
-WHERE description LIKE 'Intro to%' AND (cost < 1100.00 OR cost IS NULL);
+WHERE description LIKE 'Intro to%' 
+    AND (cost < 1100.00 OR cost IS NULL);
 
 -- 4(b)
--- COALESCE
+SELECT course_no,
+       description,
+       cost,
+       prerequisite
+FROM course
+WHERE description LIKE 'Intro to%'
+  AND COALESCE(cost, 0) < 1100.00;
 
 --------------------------------------------------------------------------------
 -- 5. Retrieve the course number, course description, cost, and prerequisites 
@@ -233,19 +240,13 @@ WHERE c.prerequisite = 350;
 -- 13. Retrieve the grades Larry Walter received for 'Homework' and 'Quiz' in 
 --     all courses/sections that they were enrolled in. Use the IN operator in 
 --     your query.  
-
-SELECT s.first_name,
-       s.last_name, 
-       e.section_id, 
-       gt.description, 
-       g.numeric_grade
-FROM student s JOIN enrollment e ON s.student_id = e.student_id
-               JOIN grade g ON e.section_id = g.section_id
-                            AND e.student_id = g.student_id
-               JOIN grade_type gt ON g.grade_type_code = gt.grade_type_code
+ 
+SELECT g.numeric_grade
+FROM grade g JOIN grade_type gt ON g.grade_type_code = gt.grade_type_code
+             JOIN student s ON  g.student_id = s.student_id
 WHERE s.first_name = 'Larry' 
     AND s.last_name = 'Walter'
-    AND gt.grade_type_code IN ('HW', 'QZ');
+    AND gt.description IN ('Homework','Quiz');
 
 --------------------------------------------------------------------------------
 -- 14. Retrieve the final examination grades for all enrolled New Jersey (NJ in 
