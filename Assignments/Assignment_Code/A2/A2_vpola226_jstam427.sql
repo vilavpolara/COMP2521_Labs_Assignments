@@ -230,9 +230,10 @@ HAVING COUNT(*) > 1;
 --     both COMP2511 and COMP1502. Therefore, the number of courses it is a 
 --     prerequisite for is 2. Exclude courses that do not have a prerequisite.  
 
-SELECT b.description AS prerequisite_course_description, COUNT(*) AS total_prereq_of_other
+SELECT b.description AS prerequisite_course_description, 
+       COUNT(*) AS total_prereq_of_other
 FROM course c JOIN  course b ON c.prerequisite = b.course_no
-GROUP BY b.description
+GROUP BY b.description;
 
 --------------------------------------------------------------------------------
 -- 18. Retrieve each course description along with its prerequisite course 
