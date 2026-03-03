@@ -6,6 +6,7 @@
                       Authors: Vilav Polara, Lorenzo Maria                        
                                Due: March 2, 2026
 ------------------------------------------------------------------------------*/
+
 /*------------------------------------------------------------------------------
 Contribution Table:
     Vilav Polara: All even number queries
