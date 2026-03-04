@@ -1,0 +1,10 @@
++---------+-------------+--------+
+| term_id | term_desc   | status |
++---------+-------------+--------+
+|       1 | Fall 2005   | CLOSED |
+|       2 | Spring 2006 | CLOSED |
+|       3 | Summer 2006 | CLOSED |
+|       4 | Fall 2006   | CLOSED |
+|       5 | Spring 2007 | CLOSED |
+|       6 | Summer 2007 | OPEN   |
++---------+-------------+--------+

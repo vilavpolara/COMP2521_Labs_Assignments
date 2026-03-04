@@ -1,75 +1,3 @@
-/*
-Course:
-    course_no, primary key
-    description
-    cost
-    prerequisite, multiple
-
-Enrollment:
-    student_id, primary key
-    section_id, primary key
-    enroll_date
-    final_grade
-
-Grade:
-    student_id, primary key
-    section_id, primary key
-    grade_type_code, primary key
-    grade_code_occurrence, primary key
-    numeric_grade
-    comments
-
-Grade_Conversion:
-    letter_grade, primary key
-    grade_point
-    max_grade
-    min_grade
-
-Grade_Type:
-    grade_type_code, primary key
-    description
-
-Grade_type_weight:
-    section_id, primary key
-    grade_type_code, primary key
-    numeric_per_seciton
-    percent_of_final_grade
-    drop_lowest
-
-Instructor:
-    instructor_id, primary key
-    salutation
-    first_name
-    last_name
-    street_address
-    zip, multiple
-    phone
-
-Section:
-    section_id, primary key
-    course_no, multiple
-    section_no
-    start_date_time
-    location
-    instructor_id, multiple
-    capacity
-
-Student:
-    student_id, primary key
-    salutation
-    first_name
-    last_name
-    street_address
-    zip, multiple
-    phone
-    employer
-    registration_date
-
-Zipcode:
-    zip, primary key
-    city
-    state
-*/
 /*------------------------------------------------------------------------------
                 Assignment 2 - Querying the University Database
 
@@ -77,6 +5,12 @@ Zipcode:
                                  Shoba Ittyipe              
                       Authors: Vilav Polara, Lorenzo Maria                        
                                Due: March 2, 2026
+------------------------------------------------------------------------------*/
+
+/*------------------------------------------------------------------------------
+Contribution Table:
+    Vilav Polara: All even number queries
+    Lorenzo Maria: All odd number requires
 ------------------------------------------------------------------------------*/
 
 -- 1. Retrieve the different descriptions of grade types that a student can 
@@ -94,7 +28,8 @@ SELECT DISTINCT s.course_no,
                 s.section_id, 
                 g.grade_type_code
 FROM section s JOIN grade g ON s.section_id = g.section_id
-WHERE s.course_no = 130;
+WHERE s.course_no = 130
+Order By section_id, grade_type_code;
 
 --------------------------------------------------------------------------------
 -- 3. Retrieve all courses with 'Ad' in their description (except those that 
@@ -106,7 +41,8 @@ SELECT c.course_no,
 FROM course c JOIN section s ON c.course_no = s.course_no
 WHERE c.description NOT LIKE 'Advanced%'
     AND c.description LIKE '%Ad%'
-GROUP BY course_no;
+GROUP BY c.course_no,
+         c.description;
 
 --------------------------------------------------------------------------------
 -- 4. Retrieve the course number, course description, and the respective 
@@ -122,11 +58,17 @@ SELECT course_no,
        cost, 
        prerequisite
 FROM course
-WHERE (description LIKE 'Intro to%' AND cost < 1100.00) 
-    OR cost IS NULL;
+WHERE description LIKE 'Intro to%' 
+    AND (cost < 1100.00 OR cost IS NULL);
 
 -- 4(b)
--- COALESCE
+SELECT course_no,
+       description,
+       cost,
+       prerequisite
+FROM course
+WHERE description LIKE 'Intro to%'
+  AND COALESCE(cost, 0) < 1100.00;
 
 --------------------------------------------------------------------------------
 -- 5. Retrieve the course number, course description, cost, and prerequisites 
@@ -169,10 +111,11 @@ WHERE student_id IN (
 --    also the number of students they employ.
 
 SELECT employer, 
-       COUNT(student_id) AS Number_Student_Employ
+       COUNT(student_id) AS Num_Student_Employed
 FROM student
 GROUP BY employer
-ORDER BY COUNT(student_id) DESC;
+ORDER BY COUNT(student_id) DESC
+LIMIT 1;
 
 --------------------------------------------------------------------------------
 -- 8. Retrieve the total number of instructors who teach at least one section of
@@ -231,31 +174,29 @@ WHERE c.prerequisite = 350;
 -- 13. Retrieve the grades Larry Walter received for 'Homework' and 'Quiz' in 
 --     all courses/sections that they were enrolled in. Use the IN operator in 
 --     your query.  
-
-SELECT DISTINCT s.first_name, 
-                s.last_name, 
-                e.section_id, 
-                gt.description, 
-                g.numeric_grade
-FROM student s JOIN enrollment e ON s.student_id = e.student_id
-               JOIN grade g ON e.section_id = g.section_id
-               JOIN grade_type gt ON g.grade_type_code = gt.grade_type_code
+ 
+SELECT g.numeric_grade
+FROM grade g JOIN grade_type gt ON g.grade_type_code = gt.grade_type_code
+             JOIN student s ON  g.student_id = s.student_id
 WHERE s.first_name = 'Larry' 
     AND s.last_name = 'Walter'
-    AND gt.grade_type_code IN ('HW', 'QZ');
+    AND gt.description IN ('Homework','Quiz');
 
 --------------------------------------------------------------------------------
 -- 14. Retrieve the final examination grades for all enrolled New Jersey (NJ in 
 --     state field) students of course number 350. Note that the final exam does
 --     not mean the final grade.  
 
-SELECT z.state, s.course_no, g.student_id, AVG(g.numeric_grade)
+SELECT z.state, 
+       s.course_no, 
+       g.student_id, 
+       g.numeric_grade AS Final_Examination_Grades
 FROM zipcode z JOIN student st ON z.zip = st.zip
                JOIN grade g ON st.student_id = g.student_id
                JOIN section s ON g.section_id = s.section_id
 WHERE s.course_no=350 
     AND z.state = 'NJ'
-GROUP BY student_id;
+    AND g.grade_type_code = 'FI';
 
 --------------------------------------------------------------------------------
 -- 15. Retrieve the lowest grade achieved for the final exam within each section
@@ -264,15 +205,14 @@ GROUP BY student_id;
 --     section).  
 --     Hint: make use of an alias for the column.  
 
-SELECT g.grade_type_code AS Grade_Type, 
-       c.description AS Course_Name, 
+SELECT c.description AS Course_Name, 
        s.section_no AS Section_Number, 
        MIN(g.numeric_grade) AS Lowest_Final_Exam_Grade
 FROM course c JOIN section s ON c.course_no = s.course_no
               JOIN grade g ON s.section_id = g.section_id
 WHERE g.grade_type_code = 'FI'
-GROUP BY section_no 
-ORDER BY MIN(g.numeric_grade) DESC;
+GROUP BY c.description, s.section_no 
+ORDER BY Lowest_Final_Exam_Grade DESC;
 
 --------------------------------------------------------------------------------
 -- 16. Retrieve all the courses that a student repeatedly enrolled in more than
@@ -291,11 +231,10 @@ HAVING COUNT(*) > 1;
 --     both COMP2511 and COMP1502. Therefore, the number of courses it is a 
 --     prerequisite for is 2. Exclude courses that do not have a prerequisite.  
 
-SELECT c.prerequisite, 
-       COUNT(c.course_no)
-FROM course c
-WHERE prerequisite IS NOT NULL
-GROUP BY c.prerequisite;
+SELECT b.description AS prerequisite_course_description, 
+       COUNT(*) AS total_prereq_of_other
+FROM course c JOIN  course b ON c.prerequisite = b.course_no
+GROUP BY b.description;
 
 --------------------------------------------------------------------------------
 -- 18. Retrieve each course description along with its prerequisite course 
