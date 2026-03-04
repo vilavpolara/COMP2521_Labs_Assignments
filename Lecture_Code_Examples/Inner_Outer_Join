@@ -1,0 +1,23 @@
+-- 1. Retrieve the faculty last name, and first name, and count the number of students they are advising.
+SELECT f_id, f_last, f_first, COUNT(*)
+FROM faculty INNER JOIN student USING (f_id)
+GROUP BY f_last, f_first;
+
+-- 2. Retrieve the faculty last name, and first name, and count the number of students they are advising.
+--    Include also those who are not advisors.
+SELECT f_id, f_last, f_first, COUNT(student.f_id)
+FROM faculty LEFT OUTER JOIN student USING (f_id)
+GROUP BY f_last, f_first;
+
+-- Example for COUNT() 
+SELECT COUNT(*)
+FROM enrollment;
+-- (Result = 20)
+
+SELECT COUNT(grade) (Result = 12)
+FROM enrollment;
+-- (Result = 12) because there are 8 NULL values in the grade column, and COUNT() does not count NULL values.
+
+-- 3. Retrieve the term_id, the c_sec_id, and the max_enrl column value 
+--    for all terms scheduled in the course section table. Include also those terms that do not have course sections
+--    scheduled in them. 
