@@ -3,13 +3,22 @@
 --     run in each of those locations. Sort the result by location ID. Include 
 --     also locations that do not have a course section scheduled in them yet.  
 
-
+SELECT loc_id, COUNT(c_sec_id) AS Num_Course_Section_Scheduled
+FROM location RIGHT OUTER JOIN course_section USING (loc_id)
+GROUP BY loc_id
+ORDER BY loc_id;
 
 -- 2.  Write an INSERT statement (as shown in class; you may also get help from 
---     the script file that populated the tables1) to add a course section that 
+--     the script file that populated the tables[1]) to add a course section that 
 --     has not been scheduled in a location yet. i.e, with loc_id is null. 
 
---     You can delete the row by the DELETE2 statement.  
+       INSERT INTO course_section VALUES (14, 4, 6, 1, 4, 'MWF', '0000-00-00', 
+                                          '0 00:01:20:00', NULL, 35);
+
+--     You can delete the row by the DELETE[2] statement.  
+
+       DELETE FROM course_section  
+       WHERE c_sec_id = 14; 
 
 --     Now, retrieve the faculty's last name, bldg code, room, and the course 
 --     section ID of all course sections the faculty member is assigned to teach. 
@@ -18,7 +27,7 @@
  
 --     The result should basically include the row you added above. 
 
-
+SELECT f.f_last, l.bldg_code, 
 
 -- 3.  Write another insert statement to add a course section that does not have
 --     a faculty member assigned to it yet, i.e., with f_id is null.  
@@ -62,11 +71,11 @@
 
 
 /*
-1– to insert a record with c_sec_id 14 
+[1] – to insert a record with c_sec_id 14 
 INSERT INTO course_section VALUES (14, 1, 4, 1, NULL, 'MWF', '0000-00-00', '1800', NULL, 140); 
 
 
-2 – to delete a record from course_section with c_sec_id 14 
+[2] – to delete a record from course_section with c_sec_id 14 
 DELETE FROM course_section  
 WHERE c_sec_id = 14; 
 */
