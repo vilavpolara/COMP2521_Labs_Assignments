@@ -1,0 +1,10 @@
++-----------+---------+-------------------------+---------+------+
+| course_id | call_id | course_name             | credits | preq |
++-----------+---------+-------------------------+---------+------+
+|         1 | MIS 101 | Intro. to Info. Systems |       3 | NULL |
+|         2 | MIS 301 | Systems Analysis        |       3 |    1 |
+|         3 | MIS 441 | Database Management     |       3 |    2 |
+|         4 | CS 155  | Programming in C++      |       3 |    1 |
+|         5 | MIS 451 | Web-Based Systems       |       3 |    4 |
+|         6 | CS 451  | Programmer's Approach   |       3 |    4 |
++-----------+---------+-------------------------+---------+------+
