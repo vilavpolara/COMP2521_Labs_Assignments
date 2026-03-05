@@ -4,7 +4,7 @@
 --     also locations that do not have a course section scheduled in them yet.  
 
 SELECT loc_id, COUNT(c_sec_id) AS Num_Course_Section_Scheduled
-FROM location RIGHT OUTER JOIN course_section USING (loc_id)
+FROM location LEFT OUTER JOIN course_section USING (loc_id)
 GROUP BY loc_id
 ORDER BY loc_id;
 
@@ -27,48 +27,71 @@ ORDER BY loc_id;
  
 --     The result should basically include the row you added above. 
 
-SELECT f.f_last, l.bldg_code, 
+SELECT f.f_last, l.bldg_code, l.room, cs.c_sec_id
+FROM course_section cs LEFT OUTER JOIN location l USING (loc_id)
+                       JOIN faculty f USING (f_id)
+ORDER BY cs.c_sec_id;
 
 -- 3.  Write another insert statement to add a course section that does not have
 --     a faculty member assigned to it yet, i.e., with f_id is null.  
+
+       INSERT INTO course_section VALUES (15, 1, 6, 2, NULL, 'MTWRF', '0000-00-00', 
+                                          '0 00:01:20:00', NULL, 35);
 
 --     Now, retrieve the faculty's last name, bldg code, room, and the course 
 --     section ID of all course sections, regardless of whether or not they have 
 --     been assigned a faculty member yet OR whether or not they have been 
 --     scheduled in a location yet.  
 
-
+SELECT f.f_last, l.bldg_code, l.room, cs.c_sec_id
+FROM course_section cs LEFT OUTER JOIN location l USING (loc_id)
+                       LEFT OUTER JOIN faculty f USING (f_id)
+ORDER BY cs.c_sec_id;
 
 -- 4.  Retrieve the course sections and display the number of students enrolled 
 --     in each of them. Include also those course sections that do not have 
 --     students enrolled in them. 
 
-
+SELECT c_sec_id, COUNT(s_id) AS Num_Students_Enrolled
+FROM course_section LEFT OUTER JOIN enrollment USING (c_sec_id)
+GROUP BY c_sec_id
+ORDER BY Num_Students_Enrolled DESC;
 
 -- 5.  Retrieve the term description along with the number of course sections 
 --     scheduled for that term.  
 
+SELECT term_desc, COUNT(c_sec_id) AS Num_Course_Sections_Scheduled
+FROM term JOIN course_section USING (term_id)
+GROUP BY term_id;
+
 --      a. Modify the query to include also those terms that do not have a 
 --         course section scheduled in them. 
 
-
+           SELECT term_desc, COUNT(c_sec_id) AS Num_Course_Sections_Scheduled
+           FROM term LEFT OUTER JOIN course_section USING (term_id)
+           GROUP BY term_id;
 
 -- 6.  Rewrite the above query in another way (Note: this is not necessarily a 
 --     different way!).  
 
-
+SELECT term_desc, COUNT(c_sec_id) AS Num_Course_Sections_Scheduled
+FROM course_section RIGHT OUTER JOIN term USING (term_id)
+GROUP BY term_id;
 
 -- 7.  Retrieve the term ID, term description, and the total maximum enrollment 
 --     of all course sections scheduled in that term.
 
-
+SELECT term_id, term_desc, SUM(max_enrl) AS Total_Max_Enrollment
+FROM term JOIN course_section USING (term_id)
+GROUP BY term_id, term_desc;
 
 -- 8.  Modify the above query to include also those terms that do not have any 
 --     course sections scheduled in it. Show the total as null for those terms 
 --     that do not have course sections scheduled in them.  
  
-
-
+SELECT term_id, term_desc, SUM(max_enrl) AS Total_Max_Enrollment
+FROM term LEFT OUTER JOIN course_section USING (term_id)
+GROUP BY term_id, term_desc;
 
 /*
 [1] – to insert a record with c_sec_id 14 
@@ -79,9 +102,6 @@ INSERT INTO course_section VALUES (14, 1, 4, 1, NULL, 'MWF', '0000-00-00', '1800
 DELETE FROM course_section  
 WHERE c_sec_id = 14; 
 */
-
-
-
 -- SUB-QUERIES -----------------------------------------------------------------
 -- Write the following queries using a subquery. When the question says, write 
 -- it a different way, you may write it as a join.
