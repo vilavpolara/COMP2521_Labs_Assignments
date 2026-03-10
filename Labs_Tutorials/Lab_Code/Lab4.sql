@@ -109,54 +109,105 @@ WHERE c_sec_id = 14;
 -- 1.  Retrieve the last name of all faculty members who teach during the 
 --     “Summer 2007” term.  
 
-
+SELECT f_last
+FROM faculty
+WHERE f_id IN (SELECT f_id
+              FROM course_section JOIN term USING (term_id)
+              WHERE term_desc = 'Summer 2007');
 
 -- 2.  Retrieve the course section’s day and location of the course 
 --     ‘Database Management’ during ‘open’ terms.
 
-
+SELECT c_sec_day, loc_id
+FROM course_section JOIN course USING (course_id)
+WHERE course_name = 'Database Management' AND term_id IN (SELECT term_id
+                                                      FROM term
+                                                      WHERE status LIKE 'OPEN');
 
 -- 3.  Retrieve those faculty IDs who have the same name (first, last) as a 
 --     student.
 
-
+SELECT f_id
+FROM faculty
+WHERE (f_first, f_last) IN (SELECT s_first, s_last
+                            FROM student);
 
 -- 4.  Retrieve the course section ID and the value of the max_enrl column for 
 --     all sections that correspond to the highest value for max_enrl. 
 
-
+SELECT c_sec_id, max_enrl
+FROM course_section
+WHERE max_enrl = (SELECT MAX(max_enrl)
+                 FROM course_section);
 
 -- 5.  Retrieve the course section ID and the value of the max_enrl column for 
 --     all sections that do NOT correspond with the course section that has the 
 --     highest value for max_enrl. 
 
-
+SELECT c_sec_id, max_enrl
+FROM course_section  
+WHERE max_enrl NOT IN (SELECT MAX(max_enrl)
+                 FROM course_section);
 
 -- 6.  Modify the above query to show those course sections below the average 
 --     value for max_enrl.  
 
-
+SELECT c_sec_id, max_enrl
+FROM course_section  
+WHERE max_enrl < (SELECT AVG(max_enrl)
+                 FROM course_section);
 
 -- 7.  An interesting one ☺ Retrieve the grade and term ID values for the 
 --     student Sarah Miller’s System Analysis course. 
 
-
+SELECT grade, term_id
+FROM enrollment JOIN course_section USING (c_sec_id)
+WHERE s_id = (SELECT s_id
+              FROM student
+              WHERE s_first = 'Sarah'
+              AND s_last = 'Miller')
+AND course_id = (SELECT course_id
+                 FROM course
+                 WHERE course_name = 'System Analysis');
 
 -- 8.  Retrieve the course name and the course ID of all courses that are 
 --     prerequisites for other courses.  
 
-
+SELECT course_name, course_id
+FROM course
+WHERE course_id IN (SELECT preq
+                    FROM course
+                    WHERE preq IS NOT NULL);
 
 -- 9.  Retrieve the term description of those terms that do not have a course 
 --     section scheduled in them.  
 
-
+SELECT term_desc
+FROM term
+WHERE term_id NOT IN (SELECT term_id
+                      FROM course_section);
 
 -- 10.  Another interesting one ☺ write the above query a different way! 
 
+SELECT term_desc
+FROM term LEFT JOIN course_section USING (term_id)
+WHERE c_sec_id IS NULL;
 
 
 -- UNION ----------------------------------------------------------------------- 
 -- 11.  Retrieve the last and first names of all students and faculty. Add a 
 --      comment to indicate which entity they belong to. If faculty, say 
 --      “FACULTY”, if student, say “STUDENT”. Order the results by last name
+
+SELECT s_last AS last_name,
+       s_first AS first_name,
+       'STUDENT' AS role
+FROM student
+
+UNION
+
+SELECT f_last,
+       f_first,
+       'FACULTY'
+FROM faculty
+ORDER BY last_name;

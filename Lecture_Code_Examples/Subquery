@@ -98,3 +98,15 @@ WHERE course_id IN (SELECT course_id
     AND term_id IN (SELECT term_id
                     FROM term
                     WHERE status = 'OPEN');
+
+-- Retrieve the grade and the term id values for the student Sarak Miller's System Analysis course.
+SELECT grade, term_id
+FROM enrollment
+WHERE s_id IN (SELECT s_id
+               FROM student
+               WHERE s_last = 'Miller' AND s_first = 'Sarah')
+    AND c_sec_id IN (SELECT c_sec_id
+                     FROM course_section
+                     WHERE course_id IN (SELECT course_id
+                                        FROM course
+                                        WHERE course_name = 'System Analysis'));
