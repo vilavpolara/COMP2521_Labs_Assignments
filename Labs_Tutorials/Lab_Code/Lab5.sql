@@ -1,6 +1,9 @@
+-- DDL -------------------------------------------------------------------------
+
 DROP TABLE project_consultant;
 DROP TABLE project;
 DROP TABLE consultant;
+DROP VIEW project_consultant_view;
 
 CREATE TABLE consultant ( 
 c_id INT AUTO_INCREMENT PRIMARY KEY ,
@@ -31,22 +34,24 @@ FOREIGN KEY (c_id) REFERENCES consultant(c_id)
 ALTER TABLE project
 ADD FOREIGN KEY (parent_p_id) REFERENCES project(p_id);
 
-INSERT INTO consultant VALUES
-    (1, 'Myers', 'Mark', '1968-05-05', 'mmyers@swexpert.com'),
-    (2, 'Hernandez', 'Sheila', '1971-10-08', 'shernandez@earthware.com'),
-    (3, 'Zhang', 'Brian', '1968-07-08', 'zhang@swexpert.com'),
-    (4, 'Carlson', 'Sarah', '1981-12-14', 'carlson@swexpert.com'),
-    (5, 'Courtlandt', 'Paul', '1978-01-21', 'courtlpr@yamail.com'),
-    (6, 'Park', 'Janet', '1986-03-23', 'jpark@swexpert.com');
+-- DML -------------------------------------------------------------------------
 
-INSERT INTO project VALUES
-    (1, 'Hardware Support Intranet', NULL, 1),
-    (2, 'Hardware Support Interface', 1, 1),
-    (3, 'Hardware Support Database', 2, 1),
-    (4, 'Teller Support System', NULL, 6),
-    (5, 'Internet Advertising', 1, 1),
-    (6, 'Network Design', 1, 1),
-    (7, 'Exploration Database', NULL, NULL);
+INSERT INTO consultant (c_last, c_first, c_dob, c_email) VALUES
+    ('Myers', 'Mark', '1968-05-05', 'mmyers@swexpert.com'),
+    ('Hernandez', 'Sheila', '1971-10-08', 'shernandez@earthware.com'),
+    ('Zhang', 'Brian', '1968-07-08', 'zhang@swexpert.com'),
+    ('Carlson', 'Sarah', '1981-12-14', 'carlson@swexpert.com'),
+    ('Courtlandt', 'Paul', '1978-01-21', 'courtlpr@yamail.com'),
+    ('Park', 'Janet', '1986-03-23', 'jpark@swexpert.com');
+
+INSERT INTO project (p_desc, parent_p_id, mgr_id) VALUES
+    ('Hardware Support Intranet', NULL, 1),
+    ('Hardware Support Interface', 1, 1),
+    ('Hardware Support Database', 2, 1),
+    ('Teller Support System', NULL, 6),
+    ('Internet Advertising', 1, 1),
+    ('Network Design', 1, 1),
+    ('Exploration Database', NULL, NULL);
 
 INSERT INTO project_consultant VALUES
     (1, 1, '2026-03-11', NULL),
@@ -59,7 +64,7 @@ WHERE c_id = 4;
 
 UPDATE project
 SET mgr_id = 3
-WHERE p_id = 7;
+WHERE p_desc = 'Exploration Database';
 
 DELETE FROM project
 WHERE p_desc = 'Hardware Support Interface';
@@ -73,5 +78,5 @@ WHERE p_desc = 'Teller Support System';
 
 CREATE VIEW project_consultant_view AS
     SELECT p_desc, c_last
-    FROM project LEFT JOIN project_consultant USING (p_id)
-                 LEFT JOIN consultant USING (c_id);
+    FROM project JOIN project_consultant USING (p_id)
+                 JOIN consultant USING (c_id);
