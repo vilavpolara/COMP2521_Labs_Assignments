@@ -1,0 +1,29 @@
+-- Retrieve the loc_id that are Faculty Offices
+SELECT loc_id, room
+FROM faculty JOIN location USING (loc_id);
+
+SELECT loc_id, room
+FROM course_section JOIN location USING (loc_id);
+
+
+-- Display how it is used
+SELECT loc_id, room, 'Faculty Office'
+FROM faculty JOIN location USING (loc_id)
+UNION
+SELECT loc_id, room, 'Classroom'
+FROM course_section JOIN location USING (loc_id)
+ORDER BY 1;
+
+-- Display how it is used. Include those locations that are not used at all.
+SELECT loc_id, room, 'Faculty Office'
+FROM faculty JOIN location USING (loc_id)
+UNION
+SELECT loc_id, room, 'Classroom'
+FROM course_section JOIN location USING (loc_id)
+UNION
+SELECT loc_id, room, 'Not Used'
+FROM location
+WHERE loc_id NOT IN (SELECT loc_id FROM faculty JOIN location USING (loc_id)
+                     UNION
+                     SELECT loc_id FROM course_section JOIN location USING (loc_id))
+ORDER BY 1;
