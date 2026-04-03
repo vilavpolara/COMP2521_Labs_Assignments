@@ -27,3 +27,15 @@ WHERE loc_id NOT IN (SELECT loc_id FROM faculty JOIN location USING (loc_id)
                      UNION
                      SELECT loc_id FROM course_section JOIN location USING (loc_id))
 ORDER BY 1;
+
+SELECT loc_id, room, 'Faculty Office'
+FROM faculty JOIN location USING (loc_id)
+UNION
+SELECT loc_id, room, 'Classroom'
+FROM course_section JOIN location USING (loc_id)
+UNION
+SELECT loc_id, room, 'Not Used'
+FROM location LEFT OUTER JOIN faculty USING (loc_id)
+              LEFT OUTER JOIN course_section USING (loc_id)
+WHERE faculty.loc_id IS NULL AND course_section.loc_id IS NULL
+ORDER BY 1;
