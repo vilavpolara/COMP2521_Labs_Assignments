@@ -1,65 +1,62 @@
-/*------------------------------------------------
-Drop existing tables if they exist to avoid 
-conflicts when creating new tables. 
-------------------------------------------------*/
+/*------------------------------------------------------------------------------
+Drop existing tables if they exist to avoid conflicts when creating new tables. 
+------------------------------------------------------------------------------*/
 
 DROP TABLE IF EXISTS crew;
 DROP TABLE IF EXISTS charter;
 DROP TABLE IF EXISTS aircraft;
-DROP TABLE IF EXISTS model;
-DROP TABLE IF EXISTS customer;
-DROP TABLE IF EXISTS employee;
 DROP TABLE IF EXISTS credential;
+DROP TABLE IF EXISTS employee;
+DROP TABLE IF EXISTS customer;
+DROP TABLE IF EXISTS model;
 
-/*------------------------------------------------
-Drop existing function, procedure, and triggers 
-if they exist to avoid conflicts when creating new 
-functions, procedures, and triggers. 
-------------------------------------------------*/
+/*------------------------------------------------------------------------------
+Create tables with appropriate data types, keys, and constraints to ensure data 
+integrity and enforce relationships between model, customer, employee, 
+credential, aircraft, charter, and crew.
 
-DROP FUNCTION IF EXISTS getAge;
-DROP PROCEDURE IF EXISTS procedure_name;
-DROP TRIGGER IF EXISTS trigger_name;
-
-/*------------------------------------------------
-Create tables with appropriate data types, keys,
-and constraints to ensure data integrity and
-enforce relationships between tables.
-------------------------------------------------*/
+ID Ranges:
+- Customers:    1-10
+- Employees:    101-110
+- Credentials:  201-210
+- Charters:     301-310
+- Crew:         401-410
+------------------------------------------------------------------------------*/
 
 CREATE TABLE model (
-    modelNumber VARCHAR(4) PRIMARY KEY,
+    modelNumber VARCHAR(6) PRIMARY KEY,
     chargePerMile INT NOT NULL CHECK (chargePerMile > 0),
     hrlyWaitingCharge INT NOT NULL CHECK (hrlyWaitingCharge > 0)
 );
 
 CREATE TABLE customer (
-    customerId INT PRIMARY KEY AUTO_INCREMENT,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     methodOfPay VARCHAR(50) NOT NULL,
     creditLimit INT NOT NULL CHECK (creditLimit > 0),
-    addressNbr INT,
+    addressNbr INT CHECK (addressNbr > 0),
     addressStreet VARCHAR(100),
     addressCity VARCHAR(50),
-    addressProvince VARCHAR(50),
-    addressPostalCode VARCHAR(20)
-);
+    addressProvince VARCHAR(2),
+    addressPostalCode VARCHAR(7)
+) AUTO_INCREMENT = 1;
 
 CREATE TABLE employee (
-    empNum INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100) NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    firstName VARCHAR(50) NOT NULL,
+    lastName VARCHAR(50) NOT NULL,
     phoneNumber VARCHAR(15) NOT NULL UNIQUE,
     location VARCHAR(50)
-);
+) AUTO_INCREMENT = 101;
 
 CREATE TABLE credential (
-    credId INT PRIMARY KEY AUTO_INCREMENT,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     description VARCHAR(100) NOT NULL UNIQUE
-);
+) AUTO_INCREMENT = 201;
 
 CREATE TABLE aircraft (
-    aircraftNum VARCHAR(6),
-    modelNumber VARCHAR(4) NOT NULL,
+    aircraftNum VARCHAR(6) NOT NULL UNIQUE,
+    modelNumber VARCHAR(6) NOT NULL,
     autoPilotAvailable BOOLEAN NOT NULL DEFAULT FALSE,
     dateOfFirstLaunch DATE DEFAULT (CURRENT_DATE),
     yearsInService INT,
@@ -68,83 +65,133 @@ CREATE TABLE aircraft (
 );
 
 CREATE TABLE charter (
-    charterId INT PRIMARY KEY AUTO_INCREMENT,
-    empNum INT NOT NULL,
-    modelNumber VARCHAR(4) NOT NULL,
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    empId INT NOT NULL,
     aircraftNum VARCHAR(6) NOT NULL,
     customerId INT NOT NULL,
     fuelUsage INT CHECK (fuelUsage > 0),
     costOfFuel INT CHECK (costOfFuel > 0),
-    FOREIGN KEY (empNum) REFERENCES employee(empNum),
-    FOREIGN KEY (modelNumber, aircraftNum) REFERENCES aircraft(modelNumber, aircraftNum),
-    FOREIGN KEY (customerId) REFERENCES customer(customerId)
-);
+    FOREIGN KEY (empId) REFERENCES employee(id),
+    FOREIGN KEY (aircraftNum) REFERENCES aircraft(aircraftNum),
+    FOREIGN KEY (customerId) REFERENCES customer(id)
+) AUTO_INCREMENT = 301;
 
 CREATE TABLE crew (
+    id INT AUTO_INCREMENT PRIMARY KEY,
     credId INT NOT NULL,
-    empNum INT NOT NULL,
+    empId INT NOT NULL,
     charterId INT NOT NULL,
     startDate DATE NOT NULL,
     endDate DATE NOT NULL,
     role VARCHAR(50),
-    hrlyCharge FLOAT CHECK (hrlyCharge > 0),
-    PRIMARY KEY (credId, empNum, charterId),
-    FOREIGN KEY (credId) REFERENCES credential(credId),
-    FOREIGN KEY (empNum) REFERENCES employee(empNum),
-    FOREIGN KEY (charterId) REFERENCES charter(charterId)
-);
+    hrlyCharge INT CHECK (hrlyCharge > 0),
+    FOREIGN KEY (credId) REFERENCES credential(id),
+    FOREIGN KEY (empId) REFERENCES employee(id),
+    FOREIGN KEY (charterId) REFERENCES charter(id)
+) AUTO_INCREMENT = 401;
 
-/*------------------------------------------------
-Insert sample data into the tables to populate the
-database with realistic values for testing and
-demonstration purposes.
-------------------------------------------------*/
+/*------------------------------------------------------------------------------
+Global 8000, Global 7500, Global 6500, Phenom 300, Challenger 350 - 5 models 
+with varying charge per mile and hourly waiting charges.
+------------------------------------------------------------------------------*/
 
-INSERT INTO model (modelNumber, chargerPerMile, hrlyWaitingCharge) VALUES
-('G800', 22, 950),    -- Gulfstream G800
-('G700', 20, 850),    -- Gulfstream G700
-('G650', 18, 750),    -- Gulfstream G650
-('P300', 12, 500),    -- Embraer Phenom 300
-('C350', 16, 700);    -- Bombardier Challenger 350
+INSERT INTO model (modelNumber, chargePerMile, hrlyWaitingCharge) VALUES
+('G-8000', 22, 950),
+('G-7500', 20, 850),
+('G-6500', 18, 750),
+('P-300', 12, 500),
+('C-350', 16, 700);
+
+/*------------------------------------------------------------------------------
+Evergreen Forest Products Ltd., Aurora Tech Solutions, Maple Harvest Foods Inc., 
+Northstar Mining Ventures, Clearwater Manufacturing Group - 5 customers with 
+varying payment methods, credit limits, and  addresses.
+------------------------------------------------------------------------------*/
 
 INSERT INTO customer (name, methodOfPay, creditLimit, addressNbr, addressStreet, addressCity, addressProvince, addressPostalCode) VALUES
-('Quantum Energy Corp', 'Wire Transfer', 500000, 1500, 'Bay Street', 'Toronto', 'Ontario', 'M5H 2R2'),
-('Alpine Wealth Management', 'Corporate Card', 400000, 2850, 'Stephen Avenue', 'Calgary', 'Alberta', 'T2P 5C5'),
-('Pacific Tech Ventures', 'Wire Transfer', 350000, 4200, 'Granville Street', 'Vancouver', 'British Columbia', 'V6C 1V4'),
-('Executive Travel Solutions', 'Wire Transfer', 300000, 888, 'Yonge Street', 'Toronto', 'Ontario', 'M4W 3A8'),
-('Global Resources Ltd', 'Corporate Card', 450000, 3105, 'Portage Avenue', 'Winnipeg', 'Manitoba', 'R3B 2E9');
+('Evergreen Forest Products Ltd.', 'Bank Transfer', 150000, 1247, 'Timber Ridge Drive', 'Vancouver', 'BC', 'V6B 4K2'),     -- Customer 1
+('Aurora Tech Solutions', 'Corporate Card', 75000, 520, 'Bay Street', 'Toronto', 'ON', 'T2P 5C5'),                         -- Customer 2
+('Maple Harvest Foods Inc.', 'Purchase Orders', 200000, 3891, 'Agriculture Boulevard', 'London', 'ON', 'N6C 1V4'),         -- Customer 3
+('Northstar Mining Ventures', 'Jet Card', 500000, 1005, 'Yellowknife Road', 'Yellowknife', 'NT', 'X1A 3N4'),               -- Customer 4
+('Clearwater Manufacturing Group', 'Jet Card', 350000, 7420, 'Industrial Park', 'Calgary', 'AB', 'T2C 5C5');               -- Customer 5
 
-INSERT INTO employee (name, phoneNumber, location) VALUES
-('Captain Michael Thompson', 4165551001, 'Toronto'),
-('Captain Jennifer Walsh', 4035551002, 'Calgary'),
-('First Officer David Patel', 6045551003, 'Vancouver'),
-('Captain Robert Bennett', 4165551004, 'Toronto'),
-('Flight Attendant Lisa Chen', 4035551005, 'Calgary');
+/*------------------------------------------------------------------------------
+James Mitchell, Jennifer Walsh, David Patel, Robert Bennett, Lisa Chen - 5 
+employees with varying phone numbers and locations.
+------------------------------------------------------------------------------*/
+
+INSERT INTO employee (firstName, lastName, phoneNumber, location) VALUES
+('James', 'Mitchell', '4165550147', 'Toronto'),      -- Employee 101
+('Jennifer', 'Walsh', '4035551002', 'Calgary'),      -- Employee 102
+('David', 'Patel', '6045551003', 'Vancouver'),       -- Employee 103
+('Robert', 'Bennett', '4165551004', 'Montreal'),     -- Employee 104
+('Lisa', 'Chen', '4035551005', 'Winnipeg');          -- Employee 105
+
+/*------------------------------------------------------------------------------
+Multiple credentials for pilots and flight attendants, including type ratings 
+for various aircraft models, certifications, and security clearances.
+------------------------------------------------------------------------------*/
 
 INSERT INTO credential (description) VALUES
-('Commercial Pilot License - Multi-Engine Jet'),
-('First Officer Certification'),
-('Flight Attendant Certification'),
-('Airline Transport Pilot - Gulfstream'),
-('Type Rating - Phenom 300');
+('Aircraft Type Rating - Gulfstream G8000'),              -- Credential 201
+('Aircraft Type Rating - Gulfstream G7500'),              -- Credential 202
+('Aircraft Type Rating - Gulfstream G6500'),              -- Credential 203
+('Aircraft Type Rating - Embraer Phenom 300'),            -- Credential 204
+('Aircraft Type Rating - Bombardier Challenger 350'),     -- Credential 205
+('First Officer Certification'),                          -- Credential 206
+('Airline Transport Pilot License'),                      -- Credential 207
+('Flight Attendant Certification'),                       -- Credential 208
+('Security Clearance Level 1'),                           -- Credential 209
+('Security Clearance Level 2'),                           -- Credential 210
+('Security Clearance Level 3');                           -- Credential 211
 
-INSERT INTO aircraft (modelNumber, autoPilotAvailable, dateOfManufacture) VALUES
-('G800', TRUE, '2022-03-15'),
-('G700', TRUE, '2020-08-22'),
-('G650', TRUE, '2019-11-10'),
-('P300', TRUE, '2021-06-18'),
-('C350', TRUE, '2018-01-05');
+/*------------------------------------------------------------------------------
+Multiple aircraft with unique aircraft numbers, associated with different 
+models, varying availability of auto-pilot, and different dates of first launch.
+------------------------------------------------------------------------------*/
 
-INSERT INTO charter (empNum, modelNumber, aircraftNum, customerId, fuelUsage, costOfFuel) VALUES
-(101, 'G800', 'C-A001', 1, 1850, 13320),
-(102, 'G700', 'C-B002', 2, 1550, 10850),
-(103, 'G650', 'C-C003', 3, 1350, 9450),
-(104, 'P300', 'C-D004', 4, 850, 4250),
-(105, 'C350', 'C-E005', 5, 1200, 7200);
+INSERT INTO aircraft (aircraftNum, modelNumber, autoPilotAvailable, dateOfFirstLaunch) VALUES
+('C8847G', 'G-8000', TRUE, '2022-05-15'),
+('C7234M', 'G-7500', TRUE, '2020-11-22'),
+('C5621K', 'G-6500', TRUE, '2019-08-10'),
+('C4508J', 'P-300', FALSE, '2018-03-28'),
+('C6793L', 'C-350', TRUE, '2021-09-14');
 
-INSERT INTO crew (credId, empNum, charterId, startDate, endDate, role, hrlyCharge) VALUES
-(4, 101, 1001, '2025-03-20', '2025-03-23', 'Captain', 450.00),
-(4, 102, 1002, '2025-03-18', '2025-03-21', 'Captain', 425.00),
-(2, 103, 1003, '2025-03-19', '2025-03-22', 'First Officer', 300.00),
-(1, 104, 1004, '2025-03-17', '2025-03-20', 'Pilot', 375.00),
-(3, 105, 1005, '2025-03-16', '2025-03-19', 'Flight Attendant', 225.00);
+/*------------------------------------------------------------------------------
+Various charters with different employees, aircraft, customers, fuel usage, and 
+cost of fuel.
+------------------------------------------------------------------------------*/
+
+INSERT INTO charter (empId, aircraftNum, customerId, fuelUsage, costOfFuel) VALUES
+(101, 'C8847G', 1, 2850, 8550),     -- Charter 301
+(102, 'C7234M', 2, 2100, 5880),     -- Charter 302
+(103, 'C5621K', 3, 1650, 4125),     -- Charter 303
+(104, 'C4508J', 4, 1200, 2640),     -- Charter 304
+(105, 'C6793L', 5, 2250, 6300);     -- Charter 305
+
+/*------------------------------------------------------------------------------
+5 distinct crews assigned to different charters, with varying roles and hourly 
+charges, and different start and end dates for their assignments.
+------------------------------------------------------------------------------*/
+
+INSERT INTO crew (credId, empId, charterId, startDate, endDate, role, hrlyCharge) VALUES
+-- Crew 401-403
+(207, 101, 301, '2026-03-15', '2026-03-22', 'Captain', 450),
+(206, 103, 301, '2026-03-15', '2026-03-22', 'First Officer', 425),
+(208, 105, 301, '2026-03-15', '2026-03-22', 'Flight Attendant', 280),
+-- Crew 404-406
+(202, 101, 302, '2026-07-05', '2026-07-12', 'Captain', 450),
+(206, 104, 302, '2026-07-05', '2026-07-12', 'First Officer', 425),
+(208, 105, 302, '2026-07-05', '2026-07-12', 'Flight Attendant', 280),
+-- Crew 407-409
+(203, 102, 303, '2026-07-18', '2026-07-25', 'Captain', 450),
+(206, 103, 303, '2026-07-18', '2026-07-25', 'First Officer', 425),
+(208, 105, 303, '2026-07-18', '2026-07-25', 'Flight Attendant', 280),
+-- Crew 410-412
+(204, 102, 304, '2026-09-10', '2026-09-18', 'Captain', 450),
+(206, 104, 304, '2026-09-10', '2026-09-18', 'First Officer', 425),
+(208, 105, 304, '2026-09-10', '2026-09-18', 'Flight Attendant', 280),
+-- Crew 413-415
+(205, 101, 305, '2026-12-18', '2026-12-26', 'Captain', 450),
+(206, 102, 305, '2026-12-18', '2026-12-26', 'First Officer', 425),
+(208, 105, 305, '2026-12-18', '2026-12-26', 'Flight Attendant', 280);
