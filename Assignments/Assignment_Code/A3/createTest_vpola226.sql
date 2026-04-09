@@ -20,7 +20,7 @@ DROP TABLE IF EXISTS crew_charge_audit;
 
 
 /*------------------------------------------------------------------------------
-Drop existing stored procedures, functions, and triggersif they exist to avoid 
+Drop existing stored functions, procedures, and triggers if they exist to avoid 
 conflicts during creation. 
 ------------------------------------------------------------------------------*/
 
