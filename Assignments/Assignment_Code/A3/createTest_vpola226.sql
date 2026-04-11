@@ -72,7 +72,7 @@ CREATE TABLE customer (
     name VARCHAR(100) NOT NULL,
     methodOfPay VARCHAR(50) NOT NULL,
     creditLimit INT NOT NULL CHECK (creditLimit > 0),
-    addressNbr INT CHECK (addressNbr > 0),
+    addressNumber INT CHECK (addressNumber > 0),
     addressStreet VARCHAR(100),
     addressCity VARCHAR(50),
     addressProvince VARCHAR(2),
@@ -96,12 +96,12 @@ CREATE TABLE credential (
 
 
 CREATE TABLE aircraft (
-    aircraftNum VARCHAR(6) NOT NULL UNIQUE,
+    aircraftNumber VARCHAR(6) NOT NULL UNIQUE,
     modelNumber VARCHAR(6) NOT NULL,
     autoPilotAvailable BOOLEAN NOT NULL DEFAULT FALSE,
     dateOfFirstLaunch DATE DEFAULT (CURRENT_DATE),
     yearsInService INT,
-    PRIMARY KEY (aircraftNum, modelNumber),
+    PRIMARY KEY (aircraftNumber, modelNumber),
     FOREIGN KEY (modelNumber) REFERENCES model(modelNumber)
 );
 
@@ -109,12 +109,12 @@ CREATE TABLE aircraft (
 CREATE TABLE charter (
     id INT AUTO_INCREMENT PRIMARY KEY,
     empId INT NOT NULL,
-    aircraftNum VARCHAR(6) NOT NULL,
+    aircraftNumber VARCHAR(6) NOT NULL,
     customerId INT NOT NULL,
     fuelUsage INT CHECK (fuelUsage > 0),
     costOfFuel INT CHECK (costOfFuel > 0),
     FOREIGN KEY (empId) REFERENCES employee(id),
-    FOREIGN KEY (aircraftNum) REFERENCES aircraft(aircraftNum),
+    FOREIGN KEY (aircraftNumber) REFERENCES aircraft(aircraftNumber),
     FOREIGN KEY (customerId) REFERENCES customer(id)
 ) AUTO_INCREMENT = 301;
 
@@ -146,7 +146,7 @@ INSERT INTO model (modelNumber, chargePerMile, hrlyWaitingCharge) VALUES
 
 
 INSERT INTO customer (name, methodOfPay, creditLimit, 
-                      addressNbr, addressStreet, addressCity, addressProvince, 
+                      addressNumber, addressStreet, addressCity, addressProvince, 
                       addressPostalCode) VALUES
 ('Evergreen Forest Products Ltd.', 'Bank Transfer', 150000, 
     1247, 'Timber Ridge Drive', 'Vancouver', 'BC', 
@@ -187,7 +187,7 @@ INSERT INTO credential (description) VALUES
 ('Security Clearance Level 3');
 
 
-INSERT INTO aircraft (aircraftNum, modelNumber, autoPilotAvailable, 
+INSERT INTO aircraft (aircraftNumber, modelNumber, autoPilotAvailable, 
                       dateOfFirstLaunch) VALUES
 ('C8847G', 'G-8000', TRUE, '2022-05-15'),
 ('C7234M', 'G-7500', TRUE, '2020-11-22'),
@@ -196,7 +196,7 @@ INSERT INTO aircraft (aircraftNum, modelNumber, autoPilotAvailable,
 ('C6793L', 'C-350', TRUE, '2021-09-14');
 
 
-INSERT INTO charter (empId, aircraftNum, customerId, fuelUsage, 
+INSERT INTO charter (empId, aircraftNumber, customerId, fuelUsage, 
                      costOfFuel) VALUES
 (101, 'C8847G', 1, 2850, 8550),
 (102, 'C7234M', 2, 2100, 5880),
@@ -274,7 +274,7 @@ END$$
 DELIMITER ;
 
 /*-----------------------------------------------------------------------------
-Inserts aircraft; validates model exists and aircraftNum is unique
+Inserts aircraft; validates model exists and aircraftNumber is unique
 -----------------------------------------------------------------------------*/
 DELIMITER $$
 CREATE PROCEDURE addAircraft(
@@ -292,7 +292,7 @@ BEGIN
  
     SELECT COUNT(*) INTO aircraftExists
     FROM aircraft
-    WHERE aircraftNum = aircraftNbr;
+    WHERE aircraftNumber = aircraftNbr;
  
     IF modelExists > 0 
         THEN SIGNAL SQLSTATE '45000'
@@ -307,7 +307,7 @@ BEGIN
     INSERT INTO model (modelNumber, chargePerMile, hrlyWaitingCharge) VALUES 
     (modelNbr, 18, 750);
  
-    INSERT INTO aircraft (aircraftNum, modelNumber, dateOfFirstLaunch) VALUES 
+    INSERT INTO aircraft (aircraftNumber, modelNumber, dateOfFirstLaunch) VALUES 
     (aircraftNbr, modelNbr, launchDt);
  
     SELECT CONCAT('Aircraft ', aircraftNbr,
@@ -345,7 +345,7 @@ BEGIN
  
     SELECT COUNT(*) INTO aircraftExists
     FROM aircraft
-    WHERE aircraftNum = aircraftNbr
+    WHERE aircraftNumber = aircraftNbr
       AND modelNumber = modelNbr;
  
     IF aircraftExists = 0 
@@ -355,7 +355,7 @@ BEGIN
  
     UPDATE aircraft
     SET dateOfFirstLaunch = newLaunchDt
-    WHERE aircraftNum = aircraftNbr
+    WHERE aircraftNumber = aircraftNbr
       AND modelNumber = modelNbr;
  
     SELECT CONCAT('dateOfFirstLaunch for aircraft ', aircraftNbr,
@@ -379,40 +379,31 @@ CREATE PROCEDURE addCrew(
 BEGIN
     DECLARE empExists INT DEFAULT 0;
     DECLARE charterExists INT DEFAULT 0;
-    DECLARE credExists INT DEFAULT 0;
     DECLARE credNbr INT DEFAULT 0;
- 
+
     SELECT COUNT(*) INTO empExists
     FROM employee
     WHERE id = empNbr;
- 
+
     IF empExists = 0 
         THEN SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'ERROR: Employee not found. Crew member not added.';
     END IF;
- 
+
     SELECT COUNT(*) INTO charterExists
     FROM charter
     WHERE id = charterNbr;
- 
+
     IF charterExists = 0 
         THEN SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'ERROR: Charter not found. Crew member not added.';
     END IF;
- 
-    SELECT COUNT(*), MAX(id)
-    INTO credExists, credNbr
-    FROM credential
-    WHERE description = cred_desc;
- 
-    IF credExists = 0 
-        THEN SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'ERROR: Credential description not found. Crew member not added.';
-    END IF;
- 
-    INSERT INTO crew (credId, empId, charterId, startDate, endDate, role, hrlyCharge)
-    VALUES (credNbr, empNbr, charterNbr, CURDATE(), CURDATE(), newRole, hrlyRate);
- 
+
+    SET credNbr = credentialDescription(cred_desc);
+
+    INSERT INTO crew (credId, empId, charterId, startDate, endDate, role, hrlyCharge) VALUES 
+    (credNbr, empNbr, charterNbr, CURDATE(), CURDATE(), newRole, hrlyRate);
+
     SELECT CONCAT('Crew member (empId=', empNbr,
                   ', role=', newRole,
                   ') successfully added to charter ', charterNbr, '.') AS message;
@@ -493,10 +484,10 @@ Procedure: addAircraft
 CALL addAircraft('G-9000', 'C-NEW1', '2023-01-01');
 
 -- Expected Result: SIGNAL error raised - Model exists
-CALL addAircraft('G-8000', 'C-NEW1', '2023-01-01');
+CALL addAircraft('G-9000', 'C-NEW2', '2023-01-01');
 
 -- Expected Result: SIGNAL error raised - Aircraft number exists
-CALL addAircraft('G-9000', 'C-NEW1', '2023-01-01');
+CALL addAircraft('G-9500', 'C-NEW1', '2023-01-01');
 
 /*-----------------------------------------------------------------------------
 Procedure: modAcYearServ 
@@ -509,10 +500,10 @@ CALL modAcYearServ('G-8000', 'C8847G', '2018-01-01');
 CALL modAcYearServ('G-8000', 'C8847G', NULL);
 
 -- Expected Result: SIGNAL error raised - Model not found
-CALL modAcYearServ('G-8025', 'C-C8847G', '2018-01-01');
+CALL modAcYearServ('G-8025', 'C8847G', '2018-01-01');
 
 -- Expected Result: SIGNAL error raised - Aircraft number not found
-CALL modAcYearServ('G-8000', 'C-NEW2', '2018-01-01');
+CALL modAcYearServ('G-8000', 'C-NEW3', '2018-01-01');
 
 /*-----------------------------------------------------------------------------
 Procedure: addCrew 
@@ -521,48 +512,61 @@ Procedure: addCrew
 -- Expected Result: Crew member successfully added
 CALL addCrew(101, 301, 'Flight Attendant Certification', 'Purser', 300);
 
--- Expected Result: SIGNAL error raised
+-- Expected Result: SIGNAL error raised - Employee not found
 CALL addCrew(999, 301, 'Flight Attendant Certification', 'Purser', 300);
 
--- Expected Result: SIGNAL error raised
+-- Expected Result: SIGNAL error raised - Charter not found
 CALL addCrew(101, 999, 'Flight Attendant Certification', 'Purser', 300);
 
--- Expected Result: SIGNAL error raised
+-- Expected Result: SIGNAL error raised -- Credential not found
 CALL addCrew(101, 301, 'Fake Credential', 'Purser', 300);
 
 /*-----------------------------------------------------------------------------
-Trigger:
+Trigger: yearsInServiceBIR
 -----------------------------------------------------------------------------*/
 
--- Expected Result: 11
-INSERT INTO aircraft VALUES
-('C1111A', 'G-7500', TRUE, '2015-06-01', NULL);
+-- Expected Result: yearsInService = 10
+INSERT INTO aircraft (aircraftNumber, modelNumber, autoPilotAvailable, 
+            dateOfFirstLaunch) VALUES
+('C-NEW4', 'G-8000', TRUE, '2015-06-01');
 
-SELECT yearsInService
+SELECT *
 FROM aircraft
-WHERE aircraftNum = 'C1111A';
+WHERE aircraftNumber = 'C-NEW4';
 
--- Expected Result: 16
+/*-----------------------------------------------------------------------------
+Trigger: yearsInServiceBUR
+-----------------------------------------------------------------------------*/
+
+-- Expected Result: yearsInService = 16
 UPDATE aircraft 
 SET dateOfFirstLaunch = '2010-01-01' 
-WHERE aircraftNum = 'C8847G';
+WHERE aircraftNumber = 'C8847G';
 
-SELECT yearsInService 
+SELECT * 
 FROM aircraft 
-WHERE aircraftNum = 'C8847G';
+WHERE aircraftNumber = 'C8847G';
 
 -- Expected Result: No changes to yearsInService
 UPDATE aircraft 
 SET autoPilotAvailable = FALSE 
-WHERE aircraftNum = 'C8847G';
+WHERE aircraftNumber = 'C8847G';
 
-SELECT yearsInService 
+SELECT * 
 FROM aircraft 
-WHERE aircraftNum='C8847G';
+WHERE aircraftNumber='C8847G';
 
--- Expected Result: oldHrlyCharge = 450, newHrlyCharge = 500
+/*-----------------------------------------------------------------------------
+Trigger: crew_charge_audit_BUR
+-----------------------------------------------------------------------------*/
+
+-- Expected Result: New row audit table oldHrlyCharge = 450 newHrlyCharge = 550
 UPDATE crew 
-SET hrlyCharge = 500 
+SET hrlyCharge = 550
+WHERE id = 401;
+
+SELECT *
+FROM crew
 WHERE id = 401;
 
 SELECT * 
@@ -574,43 +578,10 @@ UPDATE crew
 SET role = 'Senior Captain' 
 WHERE id = 401;
 
+SELECT *
+FROM crew
+WHERE id = 401;
+
 SELECT * 
-FROM crew_charge_audit 
+FROM crew_charge_audit
 WHERE crewId = 401;
-
-/*-----------------------------------------------------------------------------
-Constraint Violations (All)
------------------------------------------------------------------------------*/
-
-INSERT INTO model VALUES ('X-001', -5, 500);
-
-INSERT INTO model VALUES ('X-002', 10, 0);
-
-INSERT INTO customer (name, methodOfPay, creditLimit) VALUES
-('Test', 'Cash', '-1000');
-
-INSERT INTO crew_charge_audit VALUES 
-(999, -100, 500, NOW());
-
-/*-----------------------------------------------------------------------------
-Foreign Key Violations (All)
------------------------------------------------------------------------------*/
-
-INSERT INTO charter (empId,aircraftNum,customerId) VALUES 
-(999,'C8847G',1);
-
-INSERT INTO crew (credId,empId,charterId,startDate,endDate) VALUES 
-(207,101,999,'2026-01-01','2026-01-07');
-
-/*-----------------------------------------------------------------------------
-Duplicate Entry Errors (All)
------------------------------------------------------------------------------*/
-
-INSERT INTO employee (firstName,lastName,phoneNumber) VALUES 
-('Jane','Doe','4165550147');
-
-INSERT INTO credential (description) VALUES 
-('Airline Transport Pilot License');
-
-INSERT INTO employee (lastName,phoneNumber) VALUES 
-('Doe','5551234567');
