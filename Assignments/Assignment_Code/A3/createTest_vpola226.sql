@@ -27,7 +27,7 @@ DROP PROCEDURE IF EXISTS modAcYearServ;
 
 DROP TRIGGER IF EXISTS yearsInService_BIR;
 DROP TRIGGER IF EXISTS yearsInService_BUR;
-DROP TRIGGER IF EXISTS crew_chage_audit_BUR;
+DROP TRIGGER IF EXISTS crew_charge_audit_BUR;
 
 /*==============================================================================
                               TABLE DEFINITIONS
@@ -52,10 +52,12 @@ RELATIONSHIPS & DEPENDENCIES:
 ------------------------------------------------------------------------------*/
 
 CREATE TABLE crew_charge_audit (
-    crewId INT NOT NULL PRIMARY KEY,
+    auditId INT NOT NULL AUTO_INCREMENT,
+    crewId INT NOT NULL,
     oldHrlyCharge INT NOT NULL CHECK (oldHrlyCharge > 0),
     newHrlyCharge INT NOT NULL CHECK (newHrlyCharge > 0),
-    changeDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    changeDate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (auditId)
 );
 
 CREATE TABLE model (
@@ -221,6 +223,9 @@ INSERT INTO crew (credId, empId, charterId, startDate, endDate,
 (206, 102, 305, '2026-12-18', '2026-12-26', 'First Officer', 425),
 (208, 105, 305, '2026-12-18', '2026-12-26', 'Flight Attendant', 280);
 
+UPDATE aircraft
+SET yearsInService = TIMESTAMPDIFF(YEAR, dateOfFirstLaunch, CURDATE());
+
 /*=============================================================================
                       FUNCTIONS, PROCEDURES, and TRIGGERS
 =============================================================================*/
@@ -230,90 +235,18 @@ Return the age of aircraft in years
 -----------------------------------------------------------------------------*/
 
 DELIMITER $$
-CREATE FUNCTION getAge(launchDt DATE) 
+CREATE FUNCTION getAge(launchDt DATE)
     RETURNS INT
 BEGIN
-    RETURN TIMESTAMPDIFF(YEAR, launchDt, CURDATE());
-END$$
-DELIMITER ;
+    DECLARE age INT;
 
+    SET age = TIMESTAMPDIFF(YEAR, launchDt, CURDATE());
 
-/*-----------------------------------------------------------------------------
-Inserts aircraft; validates model exists and aircraftNum is unique
------------------------------------------------------------------------------*/
-
-DELIMITER $$
-CREATE PROCEDURE addAircraft(
-    IN modelNbr VARCHAR(6), 
-    IN aircraftNbr VARCHAR(6), 
-    IN launchDt DATE
-)
-BEGIN
-    DECLARE modelExists INT;
-    DECLARE aircraftExists INT;
-    
-    SELECT COUNT(*) INTO modelExists 
-    FROM model 
-    WHERE modelNumber = modelNbr;
-    
-    SELECT COUNT(*) INTO aircraftExists 
-    FROM aircraft 
-    WHERE aircraftNum = aircraftNbr;
-    
-    IF modelExists = 1
-        THEN SIGNAL SQLSTATE '45000' 
-        SET MESSAGE_TEXT = 'Model number exists. No aircraft added.';
+    IF age < 0 THEN
+        SET age = 0;   -- future launch date → 0 years in service
     END IF;
 
-    IF aircraftExists > 0
-        THEN SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Aircraft number not unique. No aircraft added.';
-    END IF;
-
-    INSERT INTO model (modelNumber, chargePerMile, hrlyWaitingCharge) VALUES 
-        (modelNbr, 18, 750);
-
-    INSERT INTO aircraft (aircraftNum, modelNumber, dateOfFirstLaunch) VALUES 
-        (aircraftNum, modelNbr, launchDt);
-
-    SELECT 'Aircraft successfully added.' AS message;
-    
-END$$
-DELIMITER ;
-
-/*-----------------------------------------------------------------------------
-Updates yearsInService for an aircraft based on launch date
------------------------------------------------------------------------------*/
-
-DELIMITER $$
-CREATE PROCEDURE modAcYearServ (
-    IN modelNbr VARCHAR(6),
-    IN aircraftNum VARCHAR(6),
-    IN newLaunchDt DATE
-)
-BEGIN
-    DECLARE modelExists INT;
-    DECLARE aircraftExists INT;
-    
-    SELECT COUNT(*) INTO modelExists 
-    FROM model 
-    WHERE modelNumber = modelNbr;
-    
-    SELECT COUNT(*) INTO aircraftExists 
-    FROM aircraft 
-    WHERE aircraftNum = aircraftNum;
-
-    IF modelExists = 0 OR aircraftExists = 0 
-        THEN SIGNAL SQLSTATE '45000' 
-        SET MESSAGE_TEXT = 'Model/Aircraft not found. No changes made.';
-    END IF;
-
-    UPDATE aircraft 
-    SET dateOfFirstLaunch = newLaunchDt 
-    WHERE aircraftNum = aircraftNum AND modelNumber = modelNbr;
-
-    SELECT 'Aircraft years in service successfully updated.' AS message;
-
+    RETURN age;
 END$$
 DELIMITER ;
 
@@ -322,21 +255,112 @@ Returns credId for a given credential description
 -----------------------------------------------------------------------------*/
 
 DELIMITER $$
-CREATE FUNCTION credentialDescription (cred_desc VARCHAR(100))
+CREATE FUNCTION credentialDescription(cred_desc VARCHAR(100))
     RETURNS INT
 BEGIN
     DECLARE credId INT;
-    
-    SELECT id INTO credId 
-    FROM credential 
+ 
+    SELECT id INTO credId
+    FROM credential
     WHERE description = cred_desc;
-    
-    IF credId = 0 
-        THEN SIGNAL SQLSTATE '45000' 
-        SET MESSAGE_TEXT = 'Credential description does not exist.';
+ 
+    IF credId IS NULL 
+        THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ERROR: Credential description does not exist.';
     END IF;
-    
+ 
     RETURN credId;
+END$$
+DELIMITER ;
+
+/*-----------------------------------------------------------------------------
+Inserts aircraft; validates model exists and aircraftNum is unique
+-----------------------------------------------------------------------------*/
+DELIMITER $$
+CREATE PROCEDURE addAircraft(
+    IN modelNbr VARCHAR(6),
+    IN aircraftNbr VARCHAR(6),
+    IN launchDt DATE
+)
+BEGIN
+    DECLARE modelExists INT DEFAULT 0;
+    DECLARE aircraftExists INT DEFAULT 0;
+ 
+    SELECT COUNT(*) INTO modelExists
+    FROM model
+    WHERE modelNumber = modelNbr;
+ 
+    SELECT COUNT(*) INTO aircraftExists
+    FROM aircraft
+    WHERE aircraftNum = aircraftNbr;
+ 
+    IF modelExists > 0 
+        THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ERROR: Model number already exists. No aircraft added.';
+    END IF;
+ 
+    IF aircraftExists > 0 
+        THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ERROR: Aircraft number already exists. No aircraft added.';
+    END IF;
+ 
+    INSERT INTO model (modelNumber, chargePerMile, hrlyWaitingCharge) VALUES 
+    (modelNbr, 18, 750);
+ 
+    INSERT INTO aircraft (aircraftNum, modelNumber, dateOfFirstLaunch) VALUES 
+    (aircraftNbr, modelNbr, launchDt);
+ 
+    SELECT CONCAT('Aircraft ', aircraftNbr,
+                  ' (model ', modelNbr, ') successfully added.') AS message;
+END$$
+DELIMITER ;
+
+/*-----------------------------------------------------------------------------
+Updates yearsInService for an aircraft based on launch date
+-----------------------------------------------------------------------------*/
+
+DELIMITER $$
+CREATE PROCEDURE modAcYearServ(
+    IN modelNbr VARCHAR(6),
+    IN aircraftNbr VARCHAR(6),
+    IN newLaunchDt DATE
+)
+BEGIN
+    DECLARE modelExists INT DEFAULT 0;
+    DECLARE aircraftExists INT DEFAULT 0;
+ 
+    IF newLaunchDt IS NULL 
+        THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ERROR: newLaunchDt is NULL. No changes made.';
+    END IF;
+ 
+    SELECT COUNT(*) INTO modelExists
+    FROM model
+    WHERE modelNumber = modelNbr;
+ 
+    IF modelExists = 0 
+        THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ERROR: Model not found. No changes made.';
+    END IF;
+ 
+    SELECT COUNT(*) INTO aircraftExists
+    FROM aircraft
+    WHERE aircraftNum = aircraftNbr
+      AND modelNumber = modelNbr;
+ 
+    IF aircraftExists = 0 
+        THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ERROR: Aircraft not found for that model. No changes made.';
+    END IF;
+ 
+    UPDATE aircraft
+    SET dateOfFirstLaunch = newLaunchDt
+    WHERE aircraftNum = aircraftNbr
+      AND modelNumber = modelNbr;
+ 
+    SELECT CONCAT('dateOfFirstLaunch for aircraft ', aircraftNbr,
+                  ' updated to ', newLaunchDt,
+                  '. yearsInService recalculated by trigger.') AS message;
 END$$
 DELIMITER ;
 
@@ -349,36 +373,49 @@ CREATE PROCEDURE addCrew(
     IN empNbr INT,
     IN charterNbr INT,
     IN cred_desc VARCHAR(100),
-    IN role VARCHAR(50),
-    IN hrlyCharge INT
+    IN newRole VARCHAR(50),
+    IN hrlyRate INT
 )
 BEGIN
-    DECLARE empExists INT;
-    DECLARE charterExists INT;
-    DECLARE credExists INT;
-
-    SELECT COUNT(*) INTO empExists 
-    FROM employee 
+    DECLARE empExists INT DEFAULT 0;
+    DECLARE charterExists INT DEFAULT 0;
+    DECLARE credExists INT DEFAULT 0;
+    DECLARE credNbr INT DEFAULT 0;
+ 
+    SELECT COUNT(*) INTO empExists
+    FROM employee
     WHERE id = empNbr;
-    
-    SELECT COUNT(*) INTO charterExists 
-    FROM charter 
-    WHERE id = charterNbr;
-    
-    SELECT COUNT(*) INTO credExists 
-    FROM credential 
-    WHERE description = cred_desc;
-    
-    IF empExists = 0 OR charterExists = 0 OR credExists = 0 
-        THEN SIGNAL SQLSTATE '45000' 
-        SET MESSAGE_TEXT = 'Employee, Charter, or Credential not found';
+ 
+    IF empExists = 0 
+        THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ERROR: Employee not found. Crew member not added.';
     END IF;
-
-    INSERT INTO crew (empId, charterId, credId, role, hrlyCharge) VALUES 
-        (empNbr, charterNbr, credentialDescription(cred_desc), role, hrlyCharge);
-
-    SELECT 'Crew member successfully added.' AS message;
-
+ 
+    SELECT COUNT(*) INTO charterExists
+    FROM charter
+    WHERE id = charterNbr;
+ 
+    IF charterExists = 0 
+        THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ERROR: Charter not found. Crew member not added.';
+    END IF;
+ 
+    SELECT COUNT(*), MAX(id)
+    INTO credExists, credNbr
+    FROM credential
+    WHERE description = cred_desc;
+ 
+    IF credExists = 0 
+        THEN SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ERROR: Credential description not found. Crew member not added.';
+    END IF;
+ 
+    INSERT INTO crew (credId, empId, charterId, startDate, endDate, role, hrlyCharge)
+    VALUES (credNbr, empNbr, charterNbr, CURDATE(), CURDATE(), newRole, hrlyRate);
+ 
+    SELECT CONCAT('Crew member (empId=', empNbr,
+                  ', role=', newRole,
+                  ') successfully added to charter ', charterNbr, '.') AS message;
 END$$
 DELIMITER ;
 
@@ -416,7 +453,7 @@ BEFORE UPDATE ON crew
 FOR EACH ROW
 BEGIN
     IF NEW.hrlyCharge <> OLD.hrlyCharge THEN
-        INSERT INTO crew_charge_audit (crewId, oldHrlyCharge, newHrlyCharge) 
+        INSERT INTO crew_charge_audit (crewId, oldHrlyCharge, newHrlyCharge)
         VALUES (OLD.id, OLD.hrlyCharge, NEW.hrlyCharge);
     END IF;
 END$$
@@ -427,7 +464,7 @@ DELIMITER ;
 =============================================================================*/
 
 /*-----------------------------------------------------------------------------
-Testing functions
+Function: getAge 
 -----------------------------------------------------------------------------*/
 
 -- Expected Result: 0
@@ -436,33 +473,50 @@ SELECT getAge(CURDATE());
 -- Expected Result: 3
 SELECT getAge('2022-05-15');
 
--- Expected Result: -3
+-- Expected Result: 0
 SELECT getAge('2030-01-01');
+
+/*-----------------------------------------------------------------------------
+Function: credentialDescription 
+-----------------------------------------------------------------------------*/
 
 -- Expected Result: 207
 SELECT credentialDescription('Airline Transport Pilot License');
 
--- Expected Result: SIGNAL error raised
+-- Expected Result: SIGNAL error raised - Credential description does not exist
 SELECT credentialDescription('Fake Credential');
 
 /*-----------------------------------------------------------------------------
-Test Procedures
+Procedure: addAircraft 
 -----------------------------------------------------------------------------*/
-
 -- Expected Result: Aircraft successfully added.
-CALL addAircraft('G-8000', 'C9999X', '2023-01-01');
+CALL addAircraft('G-9000', 'C-NEW1', '2023-01-01');
 
--- Expected Result: SIGNAL error raised
-CALL addAircraft('Z-9999', 'C0001A', '2023-01-01');
+-- Expected Result: SIGNAL error raised - Model exists
+CALL addAircraft('G-8000', 'C-NEW1', '2023-01-01');
 
--- Expected Result: SIGNAL error raised
-CALL addAircraft('G-8000', 'C8847G', '2023-01-01');
+-- Expected Result: SIGNAL error raised - Aircraft number exists
+CALL addAircraft('G-9000', 'C-NEW1', '2023-01-01');
+
+/*-----------------------------------------------------------------------------
+Procedure: modAcYearServ 
+-----------------------------------------------------------------------------*/
 
 -- Expected Result: Aircraft years in service successfully updated.
 CALL modAcYearServ('G-8000', 'C8847G', '2018-01-01');
 
--- Expected Result: SIGNAL error raised
-CALL modAcYearServ('G-8000', 'ZZZZZZ', '2018-01-01');
+-- Expected Result: SIGNAL error raised - NULL launch date
+CALL modAcYearServ('G-8000', 'C8847G', NULL);
+
+-- Expected Result: SIGNAL error raised - Model not found
+CALL modAcYearServ('G-8025', 'C-C8847G', '2018-01-01');
+
+-- Expected Result: SIGNAL error raised - Aircraft number not found
+CALL modAcYearServ('G-8000', 'C-NEW2', '2018-01-01');
+
+/*-----------------------------------------------------------------------------
+Procedure: addCrew 
+-----------------------------------------------------------------------------*/
 
 -- Expected Result: Crew member successfully added
 CALL addCrew(101, 301, 'Flight Attendant Certification', 'Purser', 300);
@@ -477,7 +531,7 @@ CALL addCrew(101, 999, 'Flight Attendant Certification', 'Purser', 300);
 CALL addCrew(101, 301, 'Fake Credential', 'Purser', 300);
 
 /*-----------------------------------------------------------------------------
-Test Triggers
+Trigger:
 -----------------------------------------------------------------------------*/
 
 -- Expected Result: 11
