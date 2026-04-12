@@ -154,3 +154,43 @@ FROM course_section
 WHERE max_enrl = (SELECT MAX(max_enrl)
                   FROM course_section);
 
+SELECT c_sec_id, max_enrl
+FROM course_section
+WHERE max_enrl <> (SELECT MAX(max_enrl)
+                   FROM course_section);
+
+
+SELECT c_sec_id, max_enrl
+FROM course_section
+WHERE max_enrl < (SELECT AVG(max_enrl)
+                  FROM course_section);
+
+SELECT grade
+FROM enrollment
+WHERE s_id = (SELECT s_id
+              FROM student
+              WHERE s_first = 'Sarah' and s_last = 'Miller')
+      AND
+      c_sec_id IN (SELECT c_sec_id
+                  FROM course_section
+                  WHERE course_id = (SELECT course_id
+                                     FROM course
+                                     WHERE course_name = 'Systems Analysis'));
+
+SELECT course_id, course_name
+FROM course
+WHERE course_id IN (SELECT preq
+                    FROM course
+                    WHERE preq IS NOT NULL);
+
+SELECT term_desc
+FROM term
+WHERE term_id NOT IN (SELECT term_id
+                      FROM course_section);
+
+SELECT f_last AS last_name, f_first AS first_name, 'Faculty' AS entity
+FROM faculty
+UNION
+SELECT s_last, s_first, 'Student'
+FROM student
+ORDER BY last_name;
