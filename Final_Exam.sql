@@ -113,7 +113,7 @@ WHERE s.s_first NOT lIKE 'Sarah' AND s.s_last NOT LIKE 'Miller'
                                  AND sm.s_first LIKE 'Sarah'
                                  AND sm.s_last LIKE 'Miller';
 
--- Lab 5
+-- Lab 4
 
 SELECT l.loc_id, COUNT(sec_num)
 FROM location l LEFT JOIN course_section USING (loc_id)
@@ -194,3 +194,89 @@ UNION
 SELECT s_last, s_first, 'Student'
 FROM student
 ORDER BY last_name;
+
+-- Lab 5
+
+DROP TABLE project_consultant;
+DROP TABLE project;
+DROP TABLE consultant;
+DROP VIEW sampleView;
+
+CREATE TABLE consultant ( 
+c_id INT AUTO_INCREMENT PRIMARY KEY,
+c_last VARCHAR(20) NOT NULL,
+c_first VARCHAR(20) NOT NULL,
+c_dob date NOT NULL,
+c_email VARCHAR(30) UNIQUE
+) ENGINE = InnoDB;
+
+CREATE TABLE project (
+p_id INT AUTO_INCREMENT PRIMARY KEY,
+p_desc VARCHAR(30) NOT NULL UNIQUE,
+parent_p_id INT,
+mgr_id INT,
+FOREIGN KEY (mgr_id) REFERENCES consultant (c_id)
+) ENGINE = InnoDB;
+
+CREATE TABLE project_consultant (
+p_id INT,
+c_id INT,
+roll_on_date DATE,
+roll_off_date DATE,
+PRIMARY KEY (p_id, c_id),
+FOREIGN KEY (p_id) REFERENCES project(p_id),
+FOREIGN KEY (c_id) REFERENCES consultant(c_id)
+) ENGINE = InnoDB;
+
+ALTER TABLE project
+ADD FOREIGN KEY (parent_p_id) REFERENCES project(p_id);
+
+INSERT INTO consultant (c_first, c_last, c_dob, c_email) VALUES
+('Mark', 'Myers', '1968-05-05', 'mmyers@swexpert.com'),
+('Sheila', 'Hernandez', '1971-10-08', 'shernandez@earthware.com'),
+('Brian', 'Zhang', '1968-08-08', 'zhang@swexpert.com'),
+('Sarah', 'Carlson', '1981-12-14', 'carlsons@swexpert.com'),
+('Paul', 'Courtlandt', '1978-01-21', 'courtlpr@yamail.com'),
+('Janet', 'Park', '1986-03-23', 'jpark@swexpert.com');
+
+INSERT INTO project (p_desc, parent_p_id, mgr_id) VALUES
+('Hardware Support Intranet', NULL, 1),
+('Hardware Support Interface', 1, 1),
+('Hardware Support Database', 2, 1),
+('Teller Support System', NULL, 6),
+('Internet Advertising', 1, 1),
+('Network Design', 1, 1),
+('Exploration Databse', NULL, NULL);
+
+INSERT INTO project_consultant (p_id, c_id) VALUES
+(1,1),
+(6,4),
+(2,1);
+
+UPDATE consultant
+SET c_email = 'scarlson@gmail.com'
+WHERE c_first = 'Sarah' AND c_last = 'Carlson';
+
+UPDATE project
+SET mgr_id = 3
+WHERE p_desc = 'Exploration Database';
+
+DELETE FROM project
+WHERE p_desc = 'Hardware Support Interface';
+
+DELETE FROM project
+WHERE p_desc = 'Network Design';
+
+UPDATE project
+SET mgr_id = NULL
+WHERE p_desc = 'Teller Support System';
+
+CREATE VIEW sampleView AS
+  SELECT p.p_desc, c.c_last
+    FROM project p JOIN project_consultant USING (p_id)
+                   JOIN consultant c USING (c_id);
+
+DROP TABLE project_consultant;
+DROP TABLE project;
+DROP TABLE consultant;
+DROP VIEW sampleView;
