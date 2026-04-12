@@ -296,12 +296,12 @@ BEGIN
  
     IF modelExists > 0 
         THEN SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'ERROR: Model number already exists. No aircraft added.';
+        SET MESSAGE_TEXT = 'ERROR: Model number exists. No aircraft added.';
     END IF;
  
     IF aircraftExists > 0 
         THEN SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'ERROR: Aircraft number already exists. No aircraft added.';
+        SET MESSAGE_TEXT = 'ERROR: Aircraft number exists. No aircraft added.';
     END IF;
  
     INSERT INTO model (modelNumber, chargePerMile, hrlyWaitingCharge) VALUES 
@@ -350,7 +350,7 @@ BEGIN
  
     IF aircraftExists = 0 
         THEN SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'ERROR: Aircraft not found for that model. No changes made.';
+        SET MESSAGE_TEXT = 'ERROR: Aircraft not found. No changes made.';
     END IF;
  
     UPDATE aircraft
@@ -401,7 +401,8 @@ BEGIN
 
     SET credNbr = credentialDescription(cred_desc);
 
-    INSERT INTO crew (credId, empId, charterId, startDate, endDate, role, hrlyCharge) VALUES 
+    INSERT INTO crew (credId, empId, charterId, startDate, endDate, role, 
+                      hrlyCharge) VALUES 
     (credNbr, empNbr, charterNbr, CURDATE(), CURDATE(), newRole, hrlyRate);
 
     SELECT CONCAT('Crew member (empId=', empNbr,
